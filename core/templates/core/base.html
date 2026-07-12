@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}AssetFlow{% endblock %}</title>
-    <link href="https://cdn.tailwindcss.com?plugins=forms,container-queries"></link>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <script id="tailwind-config">
         tailwind.config = {
@@ -37,7 +37,7 @@
     </script>
     <style>
       .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20; }
-      body { background-color: #0E0F12 !important; color: #dbe3f3 !important; }
+      body { background-color: #0E0F12 !important; color: #dbe3f3 !important; font-family: 'Inter', sans-serif; }
       .shell { display: flex; min-height: 100vh; }
       .main { flex: 1; min-width: 0; margin-left: 260px; }
       .topbar { background: rgba(18, 22, 28, 0.6); border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding: 14px 26px; display: flex; align-items: center; justify-content: space-between; }
@@ -45,8 +45,8 @@
       .content { padding: 22px 26px 48px; }
       .card-clean { background: rgba(18, 22, 28, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; }
       
-      /* Input field overrides */
-      .form-control, .form-select, select, textarea, input[type="text"], input[type="number"], input[type="date"], input[type="email"], input[type="password"] {
+      /* Global Form Styling */
+      .form-control, .form-select, select, textarea, input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"], input[type="password"], input[type="email"] {
           background-color: #17181C !important;
           border: 1px solid #2A2C33 !important;
           color: #F3F4F6 !important;
@@ -56,6 +56,7 @@
           font-size: 0.875rem !important;
           line-height: 1.25rem !important;
           margin-top: 4px;
+          transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
       }
       .form-control:focus, .form-select:focus, select:focus, textarea:focus, input:focus {
           border-color: #6C8CFF !important;
@@ -72,7 +73,7 @@
           display: block !important;
       }
       
-      /* Standard button overrides */
+      /* Buttons styling */
       .btn {
           display: inline-flex;
           align-items: center;
@@ -85,6 +86,7 @@
           cursor: pointer;
           text-decoration: none;
           gap: 6px;
+          border: 1px solid transparent;
       }
       .btn-primary {
           background-color: #819CFF !important;
@@ -105,6 +107,20 @@
           border-color: #444653 !important;
           color: #F3F4F6 !important;
           background-color: rgba(255, 255, 255, 0.02) !important;
+      }
+      
+      /* Checkbox overrides */
+      input[type="checkbox"] {
+          background-color: #0E0F12 !important;
+          border: 1px solid #2A2C33 !important;
+          border-radius: 0.125rem !important;
+          width: 16px !important;
+          height: 16px !important;
+          cursor: pointer;
+      }
+      input[type="checkbox"]:checked {
+          background-color: #819CFF !important;
+          border-color: #819CFF !important;
       }
     </style>
     {% block extra_head %}{% endblock %}
