@@ -1,19 +1,325 @@
-{% extends "core/base.html" %}
-{% block page_title %}{% if asset %}Edit asset{% else %}Register asset{% endif %}{% endblock %}
-{% block content %}
-<div class="card-clean p-4" style="max-width:600px">
-  {% if not asset %}<p class="text-muted small">Asset Tag is generated automatically (AF-0001, AF-0002, ...) once saved.</p>{% endif %}
-  <form method="post">
-    {% csrf_token %}
-    {% for field in form %}
-      <div class="mb-3">
-        <label class="form-label">{{ field.label }}</label>
-        {{ field }}
-        {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
-      </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-primary">Save asset</button>
-    <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary">Cancel</a>
-  </form>
-</div>
-{% endblock %}
+{% load static %}
+{% load core_extras %}
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{% if asset %}Edit Asset &mdash; {{ asset.asset_tag }}{% else %}Register New Asset{% endif %} - AssetFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#141c27",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-primary": "#002780",
+                    "surface-container-lowest": "#070f19",
+                    "surface-bright": "#323a46",
+                    "surface-tint": "#b6c4ff",
+                    "on-surface": "#dbe3f3",
+                    "tertiary-container": "#bd8a20",
+                    "on-primary-container": "#002376",
+                    "secondary": "#51df9c",
+                    "tertiary-fixed": "#ffdea9",
+                    "outline-variant": "#444653",
+                    "on-primary-fixed": "#001550",
+                    "surface-container-highest": "#2d3541",
+                    "on-error": "#690005",
+                    "surface-container-high": "#222a36",
+                    "primary": "#b6c4ff",
+                    "on-secondary-container": "#003b24",
+                    "on-primary-fixed-variant": "#0d3bad",
+                    "on-tertiary-fixed": "#271900",
+                    "on-surface-variant": "#c4c5d5",
+                    "tertiary": "#f7bd51",
+                    "primary-container": "#6c8cff",
+                    "on-tertiary": "#422c00",
+                    "inverse-surface": "#dbe3f3",
+                    "error": "#ffb4ab",
+                    "primary-fixed": "#dce1ff",
+                    "on-secondary-fixed": "#002112",
+                    "surface-dim": "#0c141f",
+                    "on-background": "#dbe3f3",
+                    "on-tertiary-fixed-variant": "#5e4100",
+                    "surface-container": "#18202c",
+                    "surface-variant": "#2d3541",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#51df9c",
+                    "on-secondary-fixed-variant": "#005233",
+                    "inverse-primary": "#3255c6",
+                    "secondary-container": "#00b173",
+                    "outline": "#8e909f",
+                    "secondary-fixed": "#71fcb6",
+                    "on-secondary": "#003822",
+                    "surface": "#0c141f",
+                    "on-tertiary-container": "#3c2800",
+                    "inverse-on-surface": "#29313d",
+                    "tertiary-fixed-dim": "#f7bd51",
+                    "background": "#0c141f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "sm": "8px",
+                    "md": "12px",
+                    "lg": "16px",
+                    "xxl": "32px",
+                    "gutter": "16px",
+                    "margin-desktop": "32px",
+                    "xl": "24px",
+                    "xs": "4px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "body-base": [
+                            "Inter"
+                    ],
+                    "display-lg-mobile": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "mono-tabular": [
+                            "Inter"
+                    ],
+                    "body-bold": [
+                            "Inter"
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #0E0F12;
+            color: #dbe3f3;
+        }
+
+        .input-base, .form-control, .form-select {
+            background-color: #0E0F12 !important;
+            border: 1px solid #2A2C33 !important;
+            color: #dbe3f3 !important;
+            border-radius: 0.25rem !important;
+            height: 38px !important;
+            font-size: 13px !important;
+            width: 100% !important;
+        }
+        
+        .input-base:focus, .form-control:focus, .form-select:focus {
+            border-color: #6C8CFF !important;
+            box-shadow: 0 0 2px 0 rgba(108, 140, 255, 0.15) !important;
+            outline: none !important;
+        }
+
+        input[type="checkbox"].form-check-input, input[type="checkbox"] {
+            background-color: #0E0F12 !important;
+            border: 1px solid #2A2C33 !important;
+            border-radius: 0.125rem !important;
+            width: 16px !important;
+            height: 16px !important;
+            cursor: pointer;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #6C8CFF !important;
+            border-color: #6C8CFF !important;
+        }
+        
+        .surface-container {
+            background-color: #17181C;
+            border: 1px solid #2A2C33;
+        }
+        
+        .accent-highlight {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #2D3541;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #444653;
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base h-screen overflow-hidden flex bg-background antialiased">
+
+<!-- SideNavBar -->
+<aside class="w-[220px] bg-[#12141C] border-r border-[#2A2C33] flex flex-col h-screen fixed left-0 top-0 z-30">
+    <!-- Brand -->
+    <div class="h-[56px] px-xl flex items-center border-b border-[#2A2C33]">
+        <span class="material-symbols-outlined text-primary mr-sm text-[24px]">grid_view</span>
+        <span class="font-bold text-[15px] tracking-tight text-on-surface">AssetFlow</span>
+    </div>
+    <!-- Nav Items -->
+    <div class="flex-1 py-lg space-y-[2px] px-md overflow-y-auto custom-scroll">
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            <span class="text-[13px] font-medium">Dashboard</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[20px]">domain</span>
+            <span class="text-[13px] font-medium">Organization</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface bg-[#1F2126] border-l-[3px] border-l-primary-container transition-colors gap-md" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[20px] text-primary">inventory_2</span>
+            <span class="text-[13px] font-semibold">Assets</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[20px]">sync_alt</span>
+            <span class="text-[13px] font-medium">Allocation</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+            <span class="text-[13px] font-medium">Booking</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'maintenance_list' %}">
+            <span class="material-symbols-outlined text-[20px]">build</span>
+            <span class="text-[13px] font-medium">Maintenance</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[20px]">fact_check</span>
+            <span class="text-[13px] font-medium">Audit</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined text-[20px]">analytics</span>
+            <span class="text-[13px] font-medium">Reports</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="text-[13px] font-medium">Notifications</span>
+        </a>
+    </div>
+    <!-- Footer Profile -->
+    <div class="p-lg border-t border-[#2A2C33] flex flex-col gap-md">
+        {% if can_manage %}
+        <a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-[12px] h-[36px] rounded flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Register Asset
+        </a>
+        {% endif %}
+        
+        <div class="flex items-center gap-md pt-xs">
+            <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold text-xs">
+                {{ request.user.username|slice:":2"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="text-[11px] text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="text-on-surface-variant hover:text-error transition-colors p-1 flex items-center bg-transparent border-0 cursor-pointer" title="Sign Out">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<!-- TopNavBar -->
+<header class="h-[56px] fixed top-0 right-0 left-[220px] z-20 bg-[#12141C] border-b border-[#2A2C33] flex items-center justify-between px-xl w-auto">
+    <div class="flex items-center gap-md flex-1">
+        <a href="{% url 'asset_list' %}" class="text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span class="text-xs font-semibold">Back to Directory</span>
+        </a>
+        <div class="w-[1px] h-[16px] bg-[#2A2C33] mx-sm"></div>
+        <h1 class="text-[14px] font-bold text-on-surface">{% if asset %}Edit Asset &mdash; {{ asset.asset_tag }}{% else %}Register Asset{% endif %}</h1>
+    </div>
+</header>
+
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-[220px] mt-[56px] flex flex-col h-[calc(100vh-56px)] bg-[#0E0F12] relative overflow-hidden">
+    
+    <!-- Detail Sub-Header -->
+    <div class="px-xl py-lg flex items-center justify-between shrink-0 bg-[#12141C] border-b border-[#2A2C33]">
+        <div>
+            <h2 class="font-display-lg text-[20px] font-bold text-on-surface">{% if asset %}Edit Asset Profile{% else %}Asset Registration{% endif %}</h2>
+            <p class="text-on-surface-variant text-[13px] mt-1">{% if asset %}Update configurations and attributes for this resource.{% else %}Create a new inventory listing and generate a tracking tag.{% endif %}</p>
+        </div>
+    </div>
+
+    <!-- Scrollable Form Container -->
+    <div class="flex-1 overflow-y-auto custom-scroll p-xl flex justify-center items-start">
+        
+        <div class="w-full max-w-[600px] surface-container accent-highlight rounded-lg p-xl">
+            <h3 class="text-on-surface text-[14px] font-bold border-b border-[#2A2C33] pb-sm mb-lg flex items-center gap-xs">
+                <span class="material-symbols-outlined text-[18px] text-primary">inventory_2</span>
+                Resource Details
+            </h3>
+            
+            {% if not asset %}
+            <div class="p-md rounded bg-[#0E0F12]/50 border border-[#2A2C33] text-[12px] text-on-surface-variant mb-lg">
+                <p><strong>Note:</strong> Asset Tag is generated automatically (e.g. AF-0001, AF-0002) upon successfully saving the resource.</p>
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-lg">
+                {% csrf_token %}
+                
+                <div class="space-y-md">
+                    {% for field in form %}
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-xs">{{ field.label }}</label>
+                        
+                        <!-- Checkbox custom wrapping -->
+                        {% if field.field.widget.input_type == 'checkbox' %}
+                        <div class="flex items-center gap-sm mt-xs">
+                            {{ field }}
+                            <span class="text-xs text-on-surface-variant">{{ field.help_text|default:"Make this item available for resource booking reservations" }}</span>
+                        </div>
+                        {% else %}
+                        {{ field }}
+                        {% endif %}
+
+                        {% if field.errors %}
+                        <p class="text-error text-xs mt-1 font-body-bold">{{ field.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="border-t border-[#2A2C33] pt-lg mt-xl flex items-center gap-md">
+                    <button type="submit" class="bg-[#6C8CFF] text-[#0E0F12] hover:bg-[#5a7bed] transition-colors px-6 h-[38px] rounded font-body-bold text-[13px] flex items-center gap-sm shadow-[0_4px_12px_rgba(108,140,255,0.15)]">
+                        <span class="material-symbols-outlined text-[18px]">save</span>
+                        Save Asset
+                    </button>
+                    <a href="{% url 'asset_list' %}" class="bg-transparent border border-[#2A2C33] text-on-surface-variant hover:text-on-surface transition-colors px-4 h-[38px] rounded font-body-bold text-[13px] flex items-center justify-center">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+        
+    </div>
+</main>
+
+</body>
+</html>
