@@ -1,40 +1,523 @@
-{% extends "core/base.html" %}
+{% load static %}
 {% load core_extras %}
-{% block page_title %}Maintenance{% endblock %}
-{% block topbar_actions %}<a href="{% url 'maintenance_create' %}" class="btn btn-primary btn-sm">Raise request</a>{% endblock %}
-{% block content %}
-<div class="card-clean">
-  <table class="data w-100 mb-0">
-    <thead><tr><th>Asset</th><th>Issue</th><th>Priority</th><th>Raised by</th><th>Status</th><th></th></tr></thead>
-    <tbody>
-      {% for r in requests %}
-      <tr>
-        <td><a href="{% url 'asset_detail' r.asset.pk %}">{{ r.asset.asset_tag }}</a></td>
-        <td>{{ r.issue_description|truncatechars:40 }}</td>
-        <td>{{ r.get_priority_display }}</td>
-        <td>{{ r.raised_by }}</td>
-        <td><span class="pill {{ r.status|status_pill }}">{{ r.get_status_display }}</span>{% if r.technician_name %} <span class="text-muted small">({{ r.technician_name }})</span>{% endif %}</td>
-        <td class="text-end">
-          {% if can_approve %}
-            {% if r.status == "PENDING" %}
-              <form method="post" action="{% url 'maintenance_decide' r.pk 'approve' %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Approve</button></form>
-              <form method="post" action="{% url 'maintenance_decide' r.pk 'reject' %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Reject</button></form>
-            {% elif r.status == "APPROVED" %}
-              <form method="post" action="{% url 'maintenance_assign' r.pk %}" style="display:inline-flex;gap:4px">
-                {% csrf_token %}
-                <input type="text" name="technician_name" placeholder="Technician" class="form-control form-control-sm" style="width:120px" required>
-                <button class="btn btn-sm btn-outline-secondary">Assign</button>
-              </form>
-            {% elif r.status == "TECHNICIAN_ASSIGNED" %}
-              <form method="post" action="{% url 'maintenance_start' r.pk %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Start progress</button></form>
-            {% elif r.status == "IN_PROGRESS" %}
-              <form method="post" action="{% url 'maintenance_resolve' r.pk %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-primary">Resolve</button></form>
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AssetFlow - Maintenance Management</title>
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Tailwind Theme Config -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#0c141f",
+                        "surface-tint": "#b6c4ff",
+                        "secondary-container": "#00b173",
+                        "on-secondary-fixed": "#002112",
+                        "surface-dim": "#0c141f",
+                        "surface-container-high": "#222a36",
+                        "primary-fixed": "#dce1ff",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#ffdea9",
+                        "surface": "#0c141f",
+                        "on-tertiary": "#422c00",
+                        "outline": "#8e909f",
+                        "on-primary": "#002780",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "surface-container": "#18202c",
+                        "surface-container-low": "#141c27",
+                        "on-secondary-container": "#003b24",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#2d3541",
+                        "on-tertiary-fixed-variant": "#5e4100",
+                        "on-surface": "#dbe3f3",
+                        "secondary-fixed-dim": "#51df9c",
+                        "on-tertiary-container": "#3c2800",
+                        "tertiary-fixed-dim": "#f7bd51",
+                        "surface-bright": "#323a46",
+                        "surface-container-lowest": "#070f19",
+                        "inverse-surface": "#dbe3f3",
+                        "outline-variant": "#444653",
+                        "on-primary-container": "#002376",
+                        "on-primary-fixed-variant": "#0d3bad",
+                        "surface-variant": "#2d3541",
+                        "on-secondary-fixed-variant": "#005233",
+                        "primary-container": "#6c8cff",
+                        "on-tertiary-fixed": "#271900",
+                        "on-surface-variant": "#c4c5d5",
+                        "secondary": "#51df9c",
+                        "tertiary": "#f7bd51",
+                        "on-secondary": "#003822",
+                        "inverse-on-surface": "#29313d",
+                        "on-background": "#dbe3f3",
+                        "tertiary-container": "#bd8a20",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "inverse-primary": "#3255c6",
+                        "on-primary-fixed": "#001550",
+                        "secondary-fixed": "#71fcb6",
+                        "primary": "#b6c4ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xxl": "32px",
+                        "sm": "8px",
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "lg": "16px",
+                        "md": "12px",
+                        "base": "4px",
+                        "margin-desktop": "32px",
+                        "xl": "24px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-base": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "mono-tabular": ["Inter"],
+                        "body-bold": ["Inter"],
+                        "display-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-base": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "mono-tabular": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "400" }],
+                        "body-bold": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0E0F12; /* Canvas layer */
+            color: #dbe3f3;
+        }
+        .surface-1 {
+            background-color: #17181C;
+            border: 1px solid #2A2C33;
+        }
+        .surface-2 {
+            background-color: #1F2126;
+        }
+        .kanban-card {
+            background-color: #1F2126;
+            border: 1px solid #2A2C33;
+            transition: border-color 0.15s ease-in-out;
+        }
+        .kanban-card:hover {
+            border-color: #6c8cff; /* Indigo hover */
+        }
+        
+        /* Thin scrollbar for kanban columns */
+        .kanban-col-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .kanban-col-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .kanban-col-scroll::-webkit-scrollbar-thumb {
+            background: #2A2C33;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base antialiased flex">
+
+<!-- SideNavBar -->
+<nav class="h-screen w-[220px] fixed left-0 top-0 bg-surface-container-low dark:bg-surface-container-low border-r border-outline-variant dark:border-outline-variant flex flex-col h-full py-xl z-50">
+    <div class="px-8 mb-10 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(129,156,255,0.3)]">
+            <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1">layers</span>
+        </div>
+        <div>
+            <h1 class="text-base font-semibold tracking-wide text-text-main">AssetFlow</h1>
+            <p class="text-[11px] font-medium text-text-muted uppercase tracking-wider mt-0.5">Enterprise</p>
+        </div>
+    </div>
+    
+    <div class="flex flex-col gap-sm flex-1 px-4">
+        <!-- Dashboard Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span class="text-sm font-medium">Dashboard</span>
+        </a>
+        
+        <!-- Organization Setup Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[18px]">domain</span>
+            <span class="text-sm font-medium">Organization</span>
+        </a>
+        
+        <!-- Assets Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+            <span class="text-sm font-medium">Assets</span>
+        </a>
+        
+        <!-- Allocation Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+            <span class="text-sm font-medium">Allocation</span>
+        </a>
+        
+        <!-- Booking Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+            <span class="text-sm font-medium">Booking</span>
+        </a>
+        
+        <!-- Maintenance Link (Active) -->
+        <a class="flex items-center gap-md px-4 py-2 bg-surface-highlight text-primary relative group transition-all rounded-lg no-underline" href="{% url 'maintenance_list' %}">
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            <span class="material-symbols-outlined text-[18px]">build</span>
+            <span class="text-sm font-medium">Maintenance</span>
+        </a>
+        
+        <!-- Audit Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[18px]">fact_check</span>
+            <span class="text-sm font-medium">Audit</span>
+        </a>
+        
+        <!-- Reports Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined text-[18px]">analytics</span>
+            <span class="text-sm font-medium">Reports</span>
+        </a>
+        
+        <!-- Notifications Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[18px]">notifications</span>
+            <span class="text-sm font-medium">Notifications</span>
+            {% if unread_notification_count %}
+            <span class="ml-auto bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">{{ unread_notification_count }}</span>
             {% endif %}
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No maintenance requests yet.</td></tr>{% endfor %}
-    </tbody>
-  </table>
+        </a>
+    </div>
+    
+    <div class="px-6 mt-auto flex flex-col gap-4">
+        <a class="w-full bg-[#6C8CFF] text-[#0E0F12] font-body-bold text-body-bold h-10 rounded flex items-center justify-center hover:opacity-90 transition-opacity no-underline text-sm font-semibold" href="{% url 'asset_create' %}">
+            Register Asset
+        </a>
+        
+        <div class="pt-4 border-t border-surface-border flex items-center justify-between">
+            <div class="min-w-0">
+                <div class="text-xs font-semibold text-text-main truncate">{{ user.get_full_name|default:user.username }}</div>
+                <div class="text-[10px] text-text-muted mt-0.5">{{ user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="text-text-muted hover:text-danger transition-colors bg-none border-none p-1 cursor-pointer flex items-center">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Layout Area -->
+<div class="ml-[220px] flex-1 flex flex-col h-screen overflow-hidden">
+    <!-- TopNavBar -->
+    <header class="h-14 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant flex items-center justify-between px-xl w-full flex-shrink-0">
+        <form action="{% url 'asset_list' %}" method="get" class="relative focus-within:ring-1 focus-within:ring-primary rounded">
+            <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+            <input name="q" class="bg-[#0E0F12] border border-[#2A2C33] rounded pl-[28px] pr-sm py-[4px] text-mono-tabular font-mono-tabular text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-[#6C8CFF] focus:shadow-[0_0_0_2px_rgba(108,140,255,0.15)] w-[240px] transition-all" placeholder="Search assets, tickets..." type="text"/>
+        </form>
+        <div class="flex items-center gap-lg">
+            <div class="flex gap-md text-on-surface-variant">
+                <a href="{% url 'notification_list' %}" class="hover:text-on-surface transition-colors p-[2px] relative no-underline">
+                    <span class="material-symbols-outlined">notifications</span>
+                    {% if unread_notification_count %}
+                    <span class="absolute top-0 right-0 w-1.5 h-1.5 bg-danger rounded-full animate-pulse"></span>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant">
+                <img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9FWz62rnwSzGc7FUNrGytiqglUVoflu0bM7WJ5it27Qp87qbRmtq3iU8O_Uz-LvkXcfQMs_Q8M5uz9CUPwaqIIG3y77CNWp65p34Ef9QpuKNf_6g_qrOxdZDSoCKKWPVRFLwrjEtlYLIT14DqIyTnNcuQfTTRem5M4D-pe7aXd0HzsDVE2yry02raRVeGRimEjl_z0YRnFqfD7uNR94qBiZy0__H4RgBjo85eM6te3LdcAnsuhLynTQ"/>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content (Kanban Board) -->
+    <main class="flex-1 overflow-x-auto overflow-y-hidden p-xl bg-[#0E0F12]">
+        <!-- Board Header -->
+        <div class="flex items-center justify-between mb-lg">
+            <div>
+                <h2 class="font-headline-md text-headline-md text-on-surface m-0">Maintenance Board</h2>
+                <p class="font-body-base text-body-base text-on-surface-variant">Active repair and inspection workflows.</p>
+            </div>
+            <div class="flex gap-md">
+                <a href="{% url 'maintenance_create' %}" class="bg-[#6C8CFF] text-[#0E0F12] font-body-bold text-body-bold h-[28px] px-md rounded flex items-center gap-sm hover:opacity-90 transition-opacity text-[13px] no-underline">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                    New Ticket
+                </a>
+            </div>
+        </div>
+
+        <!-- Notification messages -->
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="p-3 rounded text-sm {% if message.tags == 'error' %}bg-danger/10 text-danger border border-danger/25{% else %}bg-secondary-container/10 text-secondary border border-secondary-container/25{% endif %}" role="alert">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Kanban Columns Container -->
+        <div class="flex gap-lg h-[calc(100%-60px)] min-w-max pb-sm">
+            
+            <!-- Column 1: Pending -->
+            <div class="kanban-column w-[300px] flex flex-col surface-1 rounded shadow-[0_1px_0_inset_rgba(255,255,255,0.05)]">
+                <div class="px-md py-md border-b border-[#2A2C33] flex items-center justify-between sticky top-0 bg-[#17181C] rounded-t z-10">
+                    <h3 class="font-label-caps text-label-caps text-on-surface tracking-wider uppercase m-0 flex items-center gap-sm">
+                        <span class="w-2 h-2 rounded-full bg-[#8e909f]"></span>
+                        Pending
+                    </h3>
+                    <span class="column-count font-mono-tabular text-mono-tabular text-outline-variant bg-[#1F2126] px-[6px] py-[2px] rounded text-[11px]">0</span>
+                </div>
+                <div class="flex-1 overflow-y-auto kanban-col-scroll p-sm flex flex-col gap-sm">
+                    {% for r in requests %}
+                        {% if r.status == "PENDING" %}
+                            <!-- Card -->
+                            <div class="kanban-card rounded p-md cursor-grab">
+                                <div class="flex justify-between items-start mb-sm">
+                                    <a href="{% url 'asset_detail' r.asset.pk %}" class="font-mono-tabular text-mono-tabular text-[#6C8CFF] bg-[#6C8CFF]/10 px-[4px] rounded border border-[#6C8CFF]/20 text-[12px] no-underline hover:underline">{{ r.asset.asset_tag }}</a>
+                                    <span class="text-xs text-text-muted">By {{ r.raised_by.get_full_name|default:r.raised_by.username }}</span>
+                                </div>
+                                <p class="font-body-base text-body-base text-on-surface mb-md leading-tight">{{ r.issue_description }}</p>
+                                <div class="flex flex-col gap-2 mt-auto">
+                                    <div class="flex items-center justify-between">
+                                        {% if r.priority == "HIGH" %}
+                                            <span class="font-label-caps text-label-caps text-[#F0576B] bg-[#2C1418] border border-[#F0576B]/15 px-1 py-[2px] rounded text-[11px]">High</span>
+                                        {% elif r.priority == "MEDIUM" %}
+                                            <span class="font-label-caps text-label-caps text-[#F2B94D] bg-[#2B2212] border border-[#F2B94D]/15 px-1 py-[2px] rounded text-[11px]">Medium</span>
+                                        {% else %}
+                                            <span class="font-label-caps text-label-caps text-[#3ECF8E] bg-[#122A22] border border-[#3ECF8E]/15 px-1 py-[2px] rounded text-[11px]">Low</span>
+                                        {% endif %}
+                                        <span class="text-outline-variant font-mono-tabular text-[12px]">Unassigned</span>
+                                    </div>
+                                    {% if can_approve %}
+                                    <div class="flex gap-2 pt-2 border-t border-[#2A2C33]">
+                                        <form method="post" action="{% url 'maintenance_decide' r.pk 'approve' %}" class="flex-1">
+                                            {% csrf_token %}
+                                            <button class="w-full py-1 text-center bg-secondary-container hover:bg-secondary-container/90 text-[#0E0F12] font-semibold text-xs rounded transition-colors">Approve</button>
+                                        </form>
+                                        <form method="post" action="{% url 'maintenance_decide' r.pk 'reject' %}" class="flex-1">
+                                            {% csrf_token %}
+                                            <button class="w-full py-1 text-center bg-[#2C1418] border border-[#F0576B]/30 hover:bg-[#3d1a20] text-[#F0576B] font-semibold text-xs rounded transition-colors">Reject</button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Column 2: Approved -->
+            <div class="kanban-column w-[300px] flex flex-col surface-1 rounded shadow-[0_1px_0_inset_rgba(255,255,255,0.05)]">
+                <div class="px-md py-md border-b border-[#2A2C33] flex items-center justify-between sticky top-0 bg-[#17181C] rounded-t z-10">
+                    <h3 class="font-label-caps text-label-caps text-on-surface tracking-wider uppercase m-0 flex items-center gap-sm">
+                        <span class="w-2 h-2 rounded-full bg-[#f7bd51]"></span>
+                        Approved
+                    </h3>
+                    <span class="column-count font-mono-tabular text-mono-tabular text-outline-variant bg-[#1F2126] px-[6px] py-[2px] rounded text-[11px]">0</span>
+                </div>
+                <div class="flex-1 overflow-y-auto kanban-col-scroll p-sm flex flex-col gap-sm">
+                    {% for r in requests %}
+                        {% if r.status == "APPROVED" %}
+                            <!-- Card -->
+                            <div class="kanban-card rounded p-md cursor-grab">
+                                <div class="flex justify-between items-start mb-sm">
+                                    <a href="{% url 'asset_detail' r.asset.pk %}" class="font-mono-tabular text-mono-tabular text-[#6C8CFF] bg-[#6C8CFF]/10 px-[4px] rounded border border-[#6C8CFF]/20 text-[12px] no-underline hover:underline">{{ r.asset.asset_tag }}</a>
+                                    <span class="text-xs text-text-muted">By {{ r.raised_by.get_full_name|default:r.raised_by.username }}</span>
+                                </div>
+                                <p class="font-body-base text-body-base text-on-surface mb-md leading-tight">{{ r.issue_description }}</p>
+                                <div class="flex flex-col gap-2 mt-auto">
+                                    <div class="flex items-center justify-between">
+                                        {% if r.priority == "HIGH" %}
+                                            <span class="font-label-caps text-label-caps text-[#F0576B] bg-[#2C1418] border border-[#F0576B]/15 px-1 py-[2px] rounded text-[11px]">High</span>
+                                        {% elif r.priority == "MEDIUM" %}
+                                            <span class="font-label-caps text-label-caps text-[#F2B94D] bg-[#2B2212] border border-[#F2B94D]/15 px-1 py-[2px] rounded text-[11px]">Medium</span>
+                                        {% else %}
+                                            <span class="font-label-caps text-label-caps text-[#3ECF8E] bg-[#122A22] border border-[#3ECF8E]/15 px-1 py-[2px] rounded text-[11px]">Low</span>
+                                        {% endif %}
+                                        <span class="text-outline-variant font-mono-tabular text-[12px]">Approved</span>
+                                    </div>
+                                    {% if can_approve %}
+                                    <div class="pt-2 border-t border-[#2A2C33]">
+                                        <form method="post" action="{% url 'maintenance_assign' r.pk %}" class="flex flex-col gap-1.5">
+                                            {% csrf_token %}
+                                            <input type="text" name="technician_name" placeholder="Technician Name" class="bg-[#0E0F12] border border-[#2A2C33] text-on-surface rounded px-2 py-1 text-xs w-full focus:outline-none focus:border-[#6C8CFF]" required>
+                                            <button class="w-full py-1 text-center bg-[#6C8CFF] hover:bg-[#597be6] text-[#0E0F12] font-semibold text-xs rounded transition-colors">Assign Technician</button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Column 3: Tech Assigned -->
+            <div class="kanban-column w-[300px] flex flex-col surface-1 rounded shadow-[0_1px_0_inset_rgba(255,255,255,0.05)]">
+                <div class="px-md py-md border-b border-[#2A2C33] flex items-center justify-between sticky top-0 bg-[#17181C] rounded-t z-10">
+                    <h3 class="font-label-caps text-label-caps text-on-surface tracking-wider uppercase m-0 flex items-center gap-sm">
+                        <span class="w-2 h-2 rounded-full bg-[#b6c4ff]"></span>
+                        Tech Assigned
+                    </h3>
+                    <span class="column-count font-mono-tabular text-mono-tabular text-outline-variant bg-[#1F2126] px-[6px] py-[2px] rounded text-[11px]">0</span>
+                </div>
+                <div class="flex-1 overflow-y-auto kanban-col-scroll p-sm flex flex-col gap-sm">
+                    {% for r in requests %}
+                        {% if r.status == "TECHNICIAN_ASSIGNED" %}
+                            <!-- Card -->
+                            <div class="kanban-card rounded p-md cursor-grab">
+                                <div class="flex justify-between items-start mb-sm">
+                                    <a href="{% url 'asset_detail' r.asset.pk %}" class="font-mono-tabular text-mono-tabular text-[#6C8CFF] bg-[#6C8CFF]/10 px-[4px] rounded border border-[#6C8CFF]/20 text-[12px] no-underline hover:underline">{{ r.asset.asset_tag }}</a>
+                                    <span class="text-xs text-text-muted">By {{ r.raised_by.get_full_name|default:r.raised_by.username }}</span>
+                                </div>
+                                <p class="font-body-base text-body-base text-on-surface mb-md leading-tight">{{ r.issue_description }}</p>
+                                <div class="flex flex-col gap-2 mt-auto">
+                                    <div class="flex items-center justify-between">
+                                        {% if r.priority == "HIGH" %}
+                                            <span class="font-label-caps text-label-caps text-[#F0576B] bg-[#2C1418] border border-[#F0576B]/15 px-1 py-[2px] rounded text-[11px]">High</span>
+                                        {% elif r.priority == "MEDIUM" %}
+                                            <span class="font-label-caps text-label-caps text-[#F2B94D] bg-[#2B2212] border border-[#F2B94D]/15 px-1 py-[2px] rounded text-[11px]">Medium</span>
+                                        {% else %}
+                                            <span class="font-label-caps text-label-caps text-[#3ECF8E] bg-[#122A22] border border-[#3ECF8E]/15 px-1 py-[2px] rounded text-[11px]">Low</span>
+                                        {% endif %}
+                                        <span class="text-outline-variant font-mono-tabular text-[12px]">{{ r.technician_name }}</span>
+                                    </div>
+                                    {% if can_approve %}
+                                    <div class="pt-2 border-t border-[#2A2C33]">
+                                        <form method="post" action="{% url 'maintenance_start' r.pk %}">
+                                            {% csrf_token %}
+                                            <button class="w-full py-1 text-center bg-[#6C8CFF] hover:bg-[#597be6] text-[#0E0F12] font-semibold text-xs rounded transition-colors">Start Progress</button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Column 4: In Progress -->
+            <div class="kanban-column w-[300px] flex flex-col surface-1 rounded shadow-[0_1px_0_inset_rgba(255,255,255,0.05)]">
+                <div class="px-md py-md border-b border-[#2A2C33] flex items-center justify-between sticky top-0 bg-[#17181C] rounded-t z-10">
+                    <h3 class="font-label-caps text-label-caps text-on-surface tracking-wider uppercase m-0 flex items-center gap-sm">
+                        <span class="w-2 h-2 rounded-full bg-[#6C8CFF]"></span>
+                        In Progress
+                    </h3>
+                    <span class="column-count font-mono-tabular text-mono-tabular text-outline-variant bg-[#1F2126] px-[6px] py-[2px] rounded text-[11px]">0</span>
+                </div>
+                <div class="flex-1 overflow-y-auto kanban-col-scroll p-sm flex flex-col gap-sm">
+                    {% for r in requests %}
+                        {% if r.status == "IN_PROGRESS" %}
+                            <!-- Card -->
+                            <div class="kanban-card rounded p-md cursor-grab border-[#6c8cff]/30">
+                                <div class="flex justify-between items-start mb-sm">
+                                    <a href="{% url 'asset_detail' r.asset.pk %}" class="font-mono-tabular text-mono-tabular text-[#6C8CFF] bg-[#6C8CFF]/10 px-[4px] rounded border border-[#6C8CFF]/20 text-[12px] no-underline hover:underline">{{ r.asset.asset_tag }}</a>
+                                    <span class="text-xs text-text-muted">By {{ r.raised_by.get_full_name|default:r.raised_by.username }}</span>
+                                </div>
+                                <p class="font-body-base text-body-base text-on-surface mb-md leading-tight">{{ r.issue_description }}</p>
+                                <div class="mb-sm">
+                                    <div class="w-full bg-[#0E0F12] rounded-full h-1 mt-1 border border-[#2A2C33]">
+                                        <div class="bg-[#6C8CFF] h-full rounded-full" style="width: 50%"></div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2 mt-auto">
+                                    <div class="flex items-center justify-between">
+                                        {% if r.priority == "HIGH" %}
+                                            <span class="font-label-caps text-label-caps text-[#F0576B] bg-[#2C1418] border border-[#F0576B]/15 px-1 py-[2px] rounded text-[11px]">High</span>
+                                        {% elif r.priority == "MEDIUM" %}
+                                            <span class="font-label-caps text-label-caps text-[#F2B94D] bg-[#2B2212] border border-[#F2B94D]/15 px-1 py-[2px] rounded text-[11px]">Medium</span>
+                                        {% else %}
+                                            <span class="font-label-caps text-label-caps text-[#3ECF8E] bg-[#122A22] border border-[#3ECF8E]/15 px-1 py-[2px] rounded text-[11px]">Low</span>
+                                        {% endif %}
+                                        <span class="text-outline-variant font-mono-tabular text-[12px]">{{ r.technician_name }}</span>
+                                    </div>
+                                    {% if can_approve %}
+                                    <div class="pt-2 border-t border-[#2A2C33]">
+                                        <form method="post" action="{% url 'maintenance_resolve' r.pk %}">
+                                            {% csrf_token %}
+                                            <button class="w-full py-1 text-center bg-[#00b173] hover:bg-[#008f5d] text-[#0E0F12] font-semibold text-xs rounded transition-colors">Resolve Repair</button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Column 5: Resolved -->
+            <div class="kanban-column w-[300px] flex flex-col surface-1 rounded shadow-[0_1px_0_inset_rgba(255,255,255,0.05)] opacity-80">
+                <div class="px-md py-md border-b border-[#2A2C33] flex items-center justify-between sticky top-0 bg-[#17181C] rounded-t z-10">
+                    <h3 class="font-label-caps text-label-caps text-on-surface tracking-wider uppercase m-0 flex items-center gap-sm text-outline-variant">
+                        <span class="w-2 h-2 rounded-full bg-[#3ECF8E]"></span>
+                        Resolved
+                    </h3>
+                    <span class="column-count font-mono-tabular text-mono-tabular text-outline-variant bg-[#1F2126] px-[6px] py-[2px] rounded text-[11px]">0</span>
+                </div>
+                <div class="flex-1 overflow-y-auto kanban-col-scroll p-sm flex flex-col gap-sm">
+                    {% for r in requests %}
+                        {% if r.status == "RESOLVED" or r.status == "REJECTED" %}
+                            <!-- Card -->
+                            <div class="kanban-card rounded p-md cursor-grab opacity-60 hover:opacity-100 transition-opacity">
+                                <div class="flex justify-between items-start mb-sm">
+                                    <a href="{% url 'asset_detail' r.asset.pk %}" class="font-mono-tabular text-mono-tabular text-outline-variant line-through text-[12px] no-underline hover:underline">{{ r.asset.asset_tag }}</a>
+                                    <span class="text-xs text-text-muted">By {{ r.raised_by.get_full_name|default:r.raised_by.username }}</span>
+                                </div>
+                                <p class="font-body-base text-body-base text-on-surface-variant mb-md leading-tight line-through">{{ r.issue_description }}</p>
+                                <div class="flex items-center justify-between mt-auto">
+                                    <span class="font-label-caps text-label-caps {% if r.status == 'RESOLVED' %}text-[#3ECF8E] bg-[#122A22] border border-[#3ECF8E]/15{% else %}text-[#F0576B] bg-[#2C1418] border border-[#F0576B]/15{% endif %} px-1 py-[2px] rounded text-[11px]">{{ r.get_status_display }}</span>
+                                    <span class="text-outline-variant font-mono-tabular text-[12px]">{{ r.technician_name|default:"-" }}</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+        </div>
+    </main>
 </div>
-{% endblock %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".kanban-column").forEach(col => {
+      const cardCount = col.querySelectorAll(".kanban-card").length;
+      col.querySelector(".column-count").textContent = cardCount;
+    });
+  });
+</script>
+</body>
+</html>
