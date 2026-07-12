@@ -1,70 +1,800 @@
-{% extends "core/base.html" %}
+{% load static %}
 {% load core_extras %}
-{% block page_title %}Organization setup{% endblock %}
-{% block content %}
-<ul class="nav nav-tabs mb-3">
-  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#departments">Departments</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#categories">Asset categories</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#employees">Employee directory</a></li>
-</ul>
-<div class="tab-content">
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Organization Setup - AssetFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-primary": "#002780",
+                "secondary-fixed": "#71fcb6",
+                "tertiary-container": "#bd8a20",
+                "surface-container-high": "#222a36",
+                "primary-fixed-dim": "#b6c4ff",
+                "primary": "#b6c4ff",
+                "surface-tint": "#b6c4ff",
+                "surface-container-highest": "#2d3541",
+                "on-surface-variant": "#c4c5d5",
+                "on-secondary-fixed-variant": "#005233",
+                "background": "#0c141f",
+                "surface-bright": "#323a46",
+                "tertiary-fixed-dim": "#f7bd51",
+                "surface-variant": "#2d3541",
+                "on-tertiary-fixed-variant": "#5e4100",
+                "on-surface": "#dbe3f3",
+                "secondary-fixed-dim": "#51df9c",
+                "on-primary-fixed": "#001550",
+                "on-error-container": "#ffdad6",
+                "surface-container": "#18202c",
+                "outline": "#8e909f",
+                "error-container": "#93000a",
+                "surface": "#0c141f",
+                "surface-dim": "#0c141f",
+                "on-primary-container": "#002376",
+                "inverse-on-surface": "#29313d",
+                "secondary-container": "#00b173",
+                "on-secondary-container": "#003b24",
+                "surface-container-lowest": "#070f19",
+                "on-secondary": "#003822",
+                "on-background": "#dbe3f3",
+                "on-tertiary-fixed": "#271900",
+                "surface-container-low": "#141c27",
+                "tertiary-fixed": "#ffdea9",
+                "tertiary": "#f7bd51",
+                "on-secondary-fixed": "#002112",
+                "on-tertiary": "#422c00",
+                "on-error": "#690005",
+                "primary-container": "#6c8cff",
+                "inverse-primary": "#3255c6",
+                "primary-fixed": "#dce1ff",
+                "error": "#ffb4ab",
+                "inverse-surface": "#dbe3f3",
+                "secondary": "#51df9c",
+                "outline-variant": "#444653",
+                "on-primary-fixed-variant": "#0d3bad",
+                "on-tertiary-container": "#3c2800"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "xl": "24px",
+                "xxl": "32px",
+                "base": "4px",
+                "gutter": "16px",
+                "sm": "8px",
+                "xs": "4px",
+                "margin-desktop": "32px",
+                "lg": "16px",
+                "margin-mobile": "16px",
+                "md": "12px"
+        },
+        "fontFamily": {
+                "mono-tabular": [
+                        "Inter"
+                ],
+                "label-caps": [
+                        "Inter"
+                ],
+                "body-bold": [
+                        "Inter"
+                ],
+                "display-lg": [
+                        "Inter"
+                ],
+                "body-base": [
+                        "Inter"
+                ],
+                "headline-md": [
+                        "Inter"
+                ],
+                "display-lg-mobile": [
+                        "Inter"
+                ]
+        },
+        "fontSize": {
+                "mono-tabular": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-caps": [
+                        "11px",
+                        {
+                                "lineHeight": "14px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-bold": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "letterSpacing": "0",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-base": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "letterSpacing": "0",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg-mobile": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+    },
+  }
+}
+</script>
+<style>
+        body { background-color: #0c141f; color: #dbe3f3; }
+        .glass-panel { background: rgba(24, 32, 44, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .table-row-hover:hover { background: rgba(255, 255, 255, 0.03); }
+        .border-hairline { border-color: rgba(255,255,255,0.05); }
+        .glow-active { box-shadow: 0 0 10px rgba(81, 223, 156, 0.2); }
+        .glow-warning { box-shadow: 0 0 10px rgba(247, 189, 81, 0.2); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2d3541; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444653; }
+</style>
+</head>
+<body class="font-body-base text-body-base antialiased flex h-screen overflow-hidden bg-background">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest/80 backdrop-blur-xl h-screen w-[240px] fixed left-0 top-0 border-r border-hairline flex flex-col h-full py-xl z-50 transition-all duration-300">
+<div class="px-xl mb-xl">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-fixed-dim">AssetFlow</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mt-1 opacity-70">Enterprise Admin</p>
+</div>
+<div class="flex-1 flex flex-col gap-sm overflow-y-auto mt-lg px-md">
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if request.resolver_match.url_name == 'dashboard' %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'dashboard' %}">
+<span class="material-symbols-outlined {% if request.resolver_match.url_name == 'dashboard' %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if request.resolver_match.url_name == 'dashboard' %}1{% else %}0{% endif %};">dashboard</span>
+<span class="font-body-bold">Dashboard</span>
+</a>
+<!-- Active State for Organization -->
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if request.resolver_match.url_name == 'org_setup' %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'org_setup' %}">
+<span class="material-symbols-outlined {% if request.resolver_match.url_name == 'org_setup' %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if request.resolver_match.url_name == 'org_setup' %}1{% else %}0{% endif %};">domain</span>
+<span class="font-body-bold">Organization</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'asset' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'asset_list' %}">
+<span class="material-symbols-outlined {% if 'asset' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'asset' in request.resolver_match.url_name %}1{% else %}0{% endif %};">inventory_2</span>
+<span class="font-body-bold">Assets</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'transfer' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'transfer_list' %}">
+<span class="material-symbols-outlined {% if 'transfer' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'transfer' in request.resolver_match.url_name %}1{% else %}0{% endif %};">sync_alt</span>
+<span class="font-body-bold">Allocation</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'booking' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'booking_list' %}">
+<span class="material-symbols-outlined {% if 'booking' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'booking' in request.resolver_match.url_name %}1{% else %}0{% endif %};">calendar_month</span>
+<span class="font-body-bold">Booking</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'maintenance' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'maintenance_list' %}">
+<span class="material-symbols-outlined {% if 'maintenance' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'maintenance' in request.resolver_match.url_name %}1{% else %}0{% endif %};">build</span>
+<span class="font-body-bold">Maintenance</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'audit' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'audit_list' %}">
+<span class="material-symbols-outlined {% if 'audit' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'audit' in request.resolver_match.url_name %}1{% else %}0{% endif %};">fact_check</span>
+<span class="font-body-bold">Audit</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'report' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'reports' %}">
+<span class="material-symbols-outlined {% if 'report' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'report' in request.resolver_match.url_name %}1{% else %}0{% endif %};">analytics</span>
+<span class="font-body-bold">Reports</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'notification' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'notification_list' %}">
+<span class="material-symbols-outlined {% if 'notification' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'notification' in request.resolver_match.url_name %}1{% else %}0{% endif %};">notifications</span>
+<span class="font-body-bold">Notifications</span>
+</a>
+</div>
+<div class="px-xl mt-auto pt-lg flex flex-col gap-md">
+{% if can_manage %}
+<a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-body-bold h-[40px] rounded-xl flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+Register Asset
+</a>
+{% endif %}
 
-  <div class="tab-pane fade show active" id="departments">
-    {% if can_manage %}<a href="{% url 'department_create' %}" class="btn btn-primary btn-sm mb-3">Add department</a>{% endif %}
-    <div class="card-clean">
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Name</th><th>Head</th><th>Parent</th><th>Status</th><th></th></tr></thead>
-        <tbody>
-          {% for d in departments %}
-          <tr>
-            <td>{{ d.name }}</td><td>{{ d.head|default:"—" }}</td><td>{{ d.parent|default:"—" }}</td>
-            <td><span class="pill {{ d.status|status_pill }}">{{ d.get_status_display }}</span></td>
-            <td class="text-end">{% if can_manage %}<a href="{% url 'department_edit' d.pk %}" class="small">Edit</a>{% endif %}</td>
-          </tr>
-          {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No departments yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
+<!-- User Profile Card -->
+<div class="border-t border-hairline pt-lg pb-md">
+    <div class="flex items-center gap-md">
+        <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold">
+            {{ request.user.username|slice:":2"|upper }}
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="font-body-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+            <div class="text-xs text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
+        </div>
+        <a href="{% url 'logout' %}" class="text-outline hover:text-error transition-colors p-1 flex items-center" title="Sign Out">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </a>
     </div>
-  </div>
+</div>
+</div>
+</nav>
 
-  <div class="tab-pane fade" id="categories">
-    {% if can_manage %}<a href="{% url 'category_create' %}" class="btn btn-primary btn-sm mb-3">Add category</a>{% endif %}
-    <div class="card-clean">
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Name</th><th>Warranty period (days)</th><th>Description</th><th></th></tr></thead>
-        <tbody>
-          {% for c in categories %}
-          <tr>
-            <td>{{ c.name }}</td><td>{{ c.warranty_period_days|default:"—" }}</td><td>{{ c.description }}</td>
-            <td class="text-end">{% if can_manage %}<a href="{% url 'category_edit' c.pk %}" class="small">Edit</a>{% endif %}</td>
-          </tr>
-          {% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No categories yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+<!-- Main Content Area -->
+<div class="flex-1 ml-[240px] flex flex-col min-h-screen relative">
+<!-- Background decorative elements -->
+<div class="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-primary/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+<div class="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
 
-  <div class="tab-pane fade" id="employees">
-    <p class="text-muted small">Roles are assigned here only — this is the sole place an Employee becomes a Department Head or Asset Manager.</p>
-    <div class="card-clean">
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Role</th><th>Status</th><th></th></tr></thead>
-        <tbody>
-          {% for e in employees %}
-          <tr>
-            <td>{{ e.get_full_name|default:e.username }}</td><td>{{ e.email }}</td><td>{{ e.department|default:"—" }}</td>
-            <td><span class="pill pill-info">{{ e.get_role_display }}</span></td>
-            <td><span class="pill {{ e.status|status_pill }}">{{ e.status|title }}</span></td>
-            <td class="text-end">{% if can_manage %}<a href="{% url 'promote_employee' e.pk %}" class="small">Promote / assign role</a>{% endif %}</td>
-          </tr>
-          {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No employees yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
+<!-- TopNavBar -->
+<header class="bg-surface/50 backdrop-blur-md h-16 fixed top-0 right-0 left-[240px] z-40 border-b border-hairline flex items-center justify-between px-xl w-auto">
+<div class="flex-1 flex items-center">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input oninput="searchTable(this.value)" class="w-full bg-surface-container-high/50 border border-hairline rounded-full py-1.5 pl-10 pr-4 text-on-surface text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-on-surface-variant/50" placeholder="Search organization..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-high/50">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-high/50">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">help_outline</span>
+</button>
+<button class="relative text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-high/50">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="absolute top-2 right-2.5 w-2 h-2 bg-error rounded-full shadow-[0_0_4px_rgba(255,180,171,0.6)]"></span>
+</button>
+<div class="w-9 h-9 rounded-full overflow-hidden border border-outline-variant/30 ml-2 cursor-pointer hover:border-primary/50 transition-colors">
+<img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFxV3bV71e12s-doaC1PrxgTaFqhTtSkhe9t3pzH36jttjFmEjRam-Tg5ktYV8hbziqRb73kh1Iy7M8BuixvmN-iVg-P-sPmLILoFzZwY7HYZf_pyGRAl3U_xoYfY9eGqmeTVl70cVoPZxl6dRIO1YjIghjlY2z3GUFVYdGPz7Qi28ZOd4QfFL5sMWoDTRm6T4zbxS7lanRu4oYB86cVuJ-HxJjAwH234lL4l-8TebRR9hk0EEeoSiaA"/>
+</div>
+</div>
+</header>
+
+<!-- Canvas -->
+<main class="flex-1 mt-16 p-margin-desktop overflow-y-auto relative z-10 flex gap-xl">
+<!-- Main Panel -->
+<div class="flex-1 flex flex-col max-w-full transition-all duration-300">
+<!-- Page Header & Summary Stats -->
+<div class="flex flex-col gap-lg mb-xl">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface m-0 tracking-tight">Organization Setup</h2>
+<p class="text-on-surface-variant font-body-base text-body-base mt-1">Manage your company structure and directories.</p>
+</div>
+{% if can_manage %}
+<div id="add-btn-container">
+<a href="{% url 'department_create' %}" id="action-add-btn" class="bg-primary-container text-on-primary-container font-body-bold text-body-bold h-[40px] px-xl rounded-xl flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span id="action-add-btn-text">Add Department</span>
+</a>
+</div>
+{% endif %}
+</div>
+
+<!-- Django Messages -->
+{% if messages %}
+<div class="flex flex-col gap-sm mt-md">
+    {% for message in messages %}
+    <div class="glass-panel border-l-4 {% if message.tags == 'error' %}border-l-error bg-error-container/10{% else %}border-l-secondary bg-secondary-container/10{% endif %} p-lg rounded-r-xl flex items-center justify-between">
+        <div class="flex items-center gap-md">
+            <span class="material-symbols-outlined {% if message.tags == 'error' %}text-error{% else %}text-secondary{% endif %}">
+                {% if message.tags == 'error' %}error{% else %}check_circle{% endif %}
+            </span>
+            <p class="font-body-bold text-on-surface">{{ message }}</p>
+        </div>
     </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Summary Stats Grid -->
+<div class="grid grid-cols-4 gap-md mt-md">
+<div class="glass-panel rounded-2xl p-md flex flex-col gap-xs relative overflow-hidden group hover:border-primary/30 transition-colors">
+<div class="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110"></div>
+<div class="flex items-center gap-2 text-on-surface-variant font-label-caps uppercase">
+<span class="material-symbols-outlined text-[16px] text-primary">account_tree</span>
+                    Total Departments
+                </div>
+<div class="font-display-lg-mobile text-on-surface mt-1">{{ departments.count }}</div>
+<div class="text-xs text-on-surface-variant flex items-center gap-1 mt-auto">
+<span class="material-symbols-outlined text-[14px]">horizontal_rule</span> Active departments
+</div>
+</div>
+<div class="glass-panel rounded-2xl p-md flex flex-col gap-xs relative overflow-hidden group hover:border-secondary/30 transition-colors">
+<div class="absolute top-0 right-0 w-16 h-16 bg-secondary/10 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110"></div>
+<div class="flex items-center gap-2 text-on-surface-variant font-label-caps uppercase">
+<span class="material-symbols-outlined text-[16px] text-secondary">groups</span>
+                    Total Headcount
+                </div>
+<div class="font-display-lg-mobile text-on-surface mt-1">{{ employees.count }}</div>
+<div class="text-xs text-secondary flex items-center gap-1 mt-auto">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> Registered members
+                </div>
+</div>
+<div class="glass-panel rounded-2xl p-md flex flex-col gap-xs relative overflow-hidden group hover:border-tertiary/30 transition-colors">
+<div class="absolute top-0 right-0 w-16 h-16 bg-tertiary/10 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110"></div>
+<div class="flex items-center gap-2 text-on-surface-variant font-label-caps uppercase">
+<span class="material-symbols-outlined text-[16px] text-tertiary">how_to_reg</span>
+                    Dept Heads
+                </div>
+<div class="font-display-lg-mobile text-on-surface mt-1" id="stat-dept-heads">0</div>
+<div class="text-xs text-tertiary flex items-center gap-1 mt-auto">
+<span class="material-symbols-outlined text-[14px]">info</span> Assigned leaders
+                </div>
+</div>
+<div class="glass-panel rounded-2xl p-md flex flex-col gap-xs relative overflow-hidden group hover:border-primary/30 transition-colors">
+<div class="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110"></div>
+<div class="flex items-center gap-2 text-on-surface-variant font-label-caps uppercase">
+<span class="material-symbols-outlined text-[16px] text-primary">work</span>
+                    Asset Categories
+                </div>
+<div class="font-display-lg-mobile text-on-surface mt-1">{{ categories.count }}</div>
+<div class="text-xs text-on-surface-variant flex items-center gap-1 mt-auto">
+<span class="material-symbols-outlined text-[14px]">horizontal_rule</span> Unique categories
+                </div>
+</div>
+</div>
+
+<!-- Segmented Tabs -->
+<div class="flex p-1 bg-surface-container-high/50 rounded-xl w-max mt-4 border border-hairline backdrop-blur-sm">
+<button id="tab-btn-departments" onclick="switchTab('departments')" class="tab-btn px-6 py-2 bg-surface-container-lowest text-primary rounded-lg font-body-bold text-sm shadow-sm transition-all">Departments</button>
+<button id="tab-btn-categories" onclick="switchTab('categories')" class="tab-btn px-6 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/50 rounded-lg font-body-base text-sm transition-all">Asset Categories</button>
+<button id="tab-btn-employees" onclick="switchTab('employees')" class="tab-btn px-6 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/50 rounded-lg font-body-base text-sm transition-all">Employee Directory</button>
+</div>
+</div>
+
+<!-- Data Table Container -->
+<div class="glass-panel rounded-2xl overflow-hidden shadow-xl flex-1 flex flex-col">
+
+<!-- DEPARTMENTS TAB -->
+<div id="tab-panel-departments" class="tab-panel flex flex-col flex-1">
+  <div class="grid grid-cols-[2fr_1.5fr_1.5fr_1fr_1fr] px-xl py-md bg-surface-container-low/50 border-b border-hairline sticky top-0 backdrop-blur-md z-10">
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:text-on-surface transition-colors">Dept Name</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Head</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Parent Dept</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Status</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider text-right">Actions</div>
   </div>
+  <div class="flex flex-col overflow-y-auto max-h-[500px]">
+    {% for d in departments %}
+    <div onclick="showDeptDetails('{{ d.pk }}', '{{ d.name|escapejs }}', '{% if d.head %}{{ d.head.get_full_name|default:d.head.username|escapejs }}{% else %}Unassigned{% endif %}', '{% if d.head %}{{ d.head.username|slice:":2"|upper|escapejs }}{% else %}??{% endif %}', '{{ d.parent.name|default:"—"|escapejs }}', '{{ d.get_status_display|escapejs }}')" class="grid grid-cols-[2fr_1.5fr_1.5fr_1fr_1fr] items-center px-xl h-[64px] border-b border-hairline table-row-hover transition-all cursor-pointer group">
+      <div class="flex items-center gap-3 pr-md">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+          <span class="material-symbols-outlined text-[18px]">engineering</span>
+        </div>
+        <div class="font-body-bold text-on-surface truncate group-hover:text-primary transition-colors">{{ d.name }}</div>
+      </div>
+      
+      <div class="flex items-center gap-3 pr-md">
+        {% if d.head %}
+        <div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-hairline">
+          <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
+            {{ d.head.username|slice:":2"|upper }}
+          </div>
+        </div>
+        <div class="font-body-base text-on-surface truncate">{{ d.head.get_full_name|default:d.head.username }}</div>
+        {% else %}
+        <div class="w-8 h-8 rounded-full bg-surface-container-lowest border border-dashed border-outline flex items-center justify-center">
+          <span class="material-symbols-outlined text-[16px] text-outline">person_off</span>
+        </div>
+        <div class="font-body-base text-on-surface-variant truncate italic opacity-70">Unassigned</div>
+        {% endif %}
+      </div>
+
+      <div class="font-body-base text-on-surface-variant truncate pr-md">
+        {{ d.parent.name|default:"—" }}
+      </div>
+
+      <div>
+        {% if d.status == 'ACTIVE' %}
+        <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-secondary/10 text-secondary border border-secondary/20 font-label-caps text-[10px] glow-active">Active</span>
+        {% else %}
+        <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-outline-variant/10 text-outline border border-outline-variant/20 font-label-caps text-[10px]">Inactive</span>
+        {% endif %}
+      </div>
+
+      <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {% if can_manage %}
+        <a onclick="event.stopPropagation();" href="{% url 'department_edit' d.pk %}" class="text-on-surface-variant hover:text-primary bg-surface-container-high/50 hover:bg-surface-container-highest w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm" title="Edit">
+          <span class="material-symbols-outlined text-[16px]">edit</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant/60">
+      <span class="material-symbols-outlined text-4xl mb-2">folder_open</span>
+      <span class="text-sm">No departments registered yet.</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- CATEGORIES TAB -->
+<div id="tab-panel-categories" class="tab-panel hidden flex flex-col flex-1">
+  <div class="grid grid-cols-[2.5fr_2fr_4.5fr_1fr] px-xl py-md bg-surface-container-low/50 border-b border-hairline sticky top-0 backdrop-blur-md z-10">
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Category Name</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Warranty Period (Days)</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Description</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider text-right">Actions</div>
+  </div>
+  <div class="flex flex-col overflow-y-auto max-h-[500px]">
+    {% for c in categories %}
+    <div onclick="showCategoryDetails('{{ c.pk }}', '{{ c.name|escapejs }}', '{{ c.warranty_period_days|default:"—"|escapejs }}', '{{ c.description|default:""|escapejs }}')" class="grid grid-cols-[2.5fr_2fr_4.5fr_1fr] items-center px-xl h-[64px] border-b border-hairline table-row-hover transition-all cursor-pointer group">
+      <div class="flex items-center gap-3 pr-md">
+        <div class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+          <span class="material-symbols-outlined text-[18px]">category</span>
+        </div>
+        <div class="font-body-bold text-on-surface truncate group-hover:text-secondary transition-colors">{{ c.name }}</div>
+      </div>
+
+      <div class="font-body-base text-on-surface truncate">
+        {{ c.warranty_period_days|default:"—" }}
+      </div>
+
+      <div class="font-body-base text-on-surface-variant truncate pr-md opacity-80">
+        {{ c.description|default:"—" }}
+      </div>
+
+      <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {% if can_manage %}
+        <a onclick="event.stopPropagation();" href="{% url 'category_edit' c.pk %}" class="text-on-surface-variant hover:text-primary bg-surface-container-high/50 hover:bg-surface-container-highest w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm" title="Edit">
+          <span class="material-symbols-outlined text-[16px]">edit</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant/60">
+      <span class="material-symbols-outlined text-4xl mb-2">folder_open</span>
+      <span class="text-sm">No asset categories registered yet.</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- EMPLOYEES TAB -->
+<div id="tab-panel-employees" class="tab-panel hidden flex flex-col flex-1">
+  <div class="grid grid-cols-[3fr_2.5fr_2fr_1.5fr_1fr] px-xl py-md bg-surface-container-low/50 border-b border-hairline sticky top-0 backdrop-blur-md z-10">
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Name & Email</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Department</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Role</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider">Status</div>
+    <div class="font-label-caps text-on-surface-variant uppercase tracking-wider text-right">Actions</div>
+  </div>
+  <div class="flex flex-col overflow-y-auto max-h-[500px]">
+    {% for e in employees %}
+    <div onclick="showEmployeeDetails('{{ e.pk }}', '{{ e.get_full_name|default:e.username|escapejs }}', '{{ e.username|slice:":2"|upper|escapejs }}', '{{ e.email|escapejs }}', '{{ e.department.name|default:"—"|escapejs }}', '{{ e.get_role_display|escapejs }}', '{{ e.status|title|escapejs }}')" class="grid grid-cols-[3fr_2.5fr_2fr_1.5fr_1fr] items-center px-xl h-[64px] border-b border-hairline table-row-hover transition-all cursor-pointer group">
+      <div class="flex items-center gap-3 pr-md">
+        <div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-hairline flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-blue-500 to-indigo-600">
+          {{ e.username|slice:":2"|upper }}
+        </div>
+        <div class="truncate">
+          <div class="font-body-bold text-on-surface group-hover:text-primary transition-colors">{{ e.get_full_name|default:e.username }}</div>
+          <div class="text-xs text-on-surface-variant truncate opacity-70">{{ e.email }}</div>
+        </div>
+      </div>
+
+      <div class="font-body-base text-on-surface truncate pr-md">
+        {{ e.department.name|default:"—" }}
+      </div>
+
+      <div>
+        <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-primary/10 text-primary border border-primary/20 font-label-caps text-[10px]">{{ e.get_role_display }}</span>
+      </div>
+
+      <div>
+        {% if e.status == 'ACTIVE' %}
+        <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-secondary/10 text-secondary border border-secondary/20 font-label-caps text-[10px] glow-active">Active</span>
+        {% else %}
+        <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-outline-variant/10 text-outline border border-outline-variant/20 font-label-caps text-[10px]">Inactive</span>
+        {% endif %}
+      </div>
+
+      <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {% if can_manage %}
+        <a onclick="event.stopPropagation();" href="{% url 'promote_employee' e.pk %}" class="text-xs font-body-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors border border-primary/20" title="Promote / assign role">
+          Assign Role
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant/60">
+      <span class="material-symbols-outlined text-4xl mb-2">people</span>
+      <span class="text-sm">No employees registered yet.</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
 
 </div>
-{% endblock %}
-{% block extra_body %}
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-{% endblock %}
+</div>
+
+<!-- Slide-out Drawer / Detail Pane -->
+<aside id="detail-drawer" class="w-[380px] glass-panel rounded-2xl border-l border-hairline flex flex-col h-full shadow-2xl overflow-hidden shrink-0 transform transition-transform duration-300">
+<div class="p-xl border-b border-hairline flex items-center justify-between bg-surface-container-low/30">
+<h3 id="drawer-title" class="font-headline-md text-on-surface">Details</h3>
+<button onclick="closeDrawer()" class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high p-1 rounded-lg transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div id="drawer-content" class="p-xl flex-1 overflow-y-auto flex flex-col gap-lg">
+  <!-- Dynamic content injected here -->
+</div>
+<div id="drawer-footer" class="p-xl border-t border-hairline bg-surface-container-low/30 flex gap-md">
+  <!-- Dynamic buttons injected here -->
+</div>
+</aside>
+</main>
+</div>
+
+<script>
+function switchTab(tabId) {
+    // Hide all tab panels
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+    // Show selected panel
+    const activePanel = document.getElementById('tab-panel-' + tabId);
+    if (activePanel) {
+        activePanel.classList.remove('hidden');
+    }
+
+    // Reset button styles
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = "tab-btn px-6 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/50 rounded-lg font-body-base text-sm transition-all";
+    });
+    // Set active button style
+    const activeBtn = document.getElementById('tab-btn-' + tabId);
+    if (activeBtn) {
+        activeBtn.className = "tab-btn px-6 py-2 bg-surface-container-lowest text-primary rounded-lg font-body-bold text-sm shadow-sm transition-all";
+    }
+
+    // Update Action Button
+    const actionBtn = document.getElementById('action-add-btn');
+    const actionBtnText = document.getElementById('action-add-btn-text');
+    if (actionBtn && actionBtnText) {
+        if (tabId === 'departments') {
+            actionBtn.style.display = 'flex';
+            actionBtn.href = "{% url 'department_create' %}";
+            actionBtnText.innerText = "Add Department";
+        } else if (tabId === 'categories') {
+            actionBtn.style.display = 'flex';
+            actionBtn.href = "{% url 'category_create' %}";
+            actionBtnText.innerText = "Add Category";
+        } else {
+            actionBtn.style.display = 'none';
+        }
+    }
+
+    // Auto-select first item of the active tab
+    selectFirstItem(tabId);
+}
+
+function closeDrawer() {
+    document.getElementById('detail-drawer').style.display = 'none';
+}
+
+function openDrawer() {
+    document.getElementById('detail-drawer').style.display = 'flex';
+}
+
+function showDeptDetails(pk, name, headName, headInitials, parentName, status) {
+    openDrawer();
+    document.getElementById('drawer-title').innerText = "Department Info";
+    
+    let headHtml = `
+      <div class="w-8 h-8 rounded-full bg-surface-container-lowest border border-dashed border-outline flex items-center justify-center">
+        <span class="material-symbols-outlined text-[16px] text-outline">person_off</span>
+      </div>
+      <div class="font-body-base text-on-surface-variant truncate italic opacity-70">Unassigned</div>
+    `;
+    if (headName !== "Unassigned") {
+        headHtml = `
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">${headInitials}</div>
+          <div class="flex-1">
+            <div class="font-body-base text-on-surface font-medium">${headName}</div>
+          </div>
+        `;
+    }
+
+    const isStatusActive = status.toUpperCase() === 'ACTIVE';
+    const statusPillClass = isStatusActive 
+        ? 'bg-secondary/10 text-secondary border border-secondary/20 glow-active' 
+        : 'bg-outline-variant/10 text-outline border border-outline-variant/20';
+
+    document.getElementById('drawer-content').innerHTML = `
+      <div class="flex flex-col gap-lg">
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Department Name</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${name}</div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Department Head</label>
+          <div class="flex items-center gap-3 p-3 bg-surface-container-lowest border border-outline-variant/30 rounded-lg">
+            ${headHtml}
+          </div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Parent Department</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${parentName}</div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Status</label>
+          <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-md ${statusPillClass} font-label-caps text-[10px] w-max">${status}</div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('drawer-footer').innerHTML = `
+      <button onclick="closeDrawer()" class="flex-1 bg-surface-container-high text-on-surface font-body-bold h-[40px] rounded-xl hover:bg-surface-container-highest transition-all">Cancel</button>
+      {% if can_manage %}
+      <a href="/org/departments/${pk}/edit/" class="flex-1 bg-primary-container text-on-primary-container font-body-bold h-[40px] rounded-xl hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+        <span class="material-symbols-outlined text-[16px]">edit</span>
+        Edit Details
+      </a>
+      {% endif %}
+    `;
+}
+
+function showCategoryDetails(pk, name, warranty, description) {
+    openDrawer();
+    document.getElementById('drawer-title').innerText = "Category Info";
+
+    document.getElementById('drawer-content').innerHTML = `
+      <div class="flex flex-col gap-lg">
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Category Name</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${name}</div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Warranty Period</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${warranty} Days</div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Description</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface min-h-[100px] whitespace-pre-wrap">${description || "No description provided."}</div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('drawer-footer').innerHTML = `
+      <button onclick="closeDrawer()" class="flex-1 bg-surface-container-high text-on-surface font-body-bold h-[40px] rounded-xl hover:bg-surface-container-highest transition-all">Cancel</button>
+      {% if can_manage %}
+      <a href="/org/categories/${pk}/edit/" class="flex-1 bg-primary-container text-on-primary-container font-body-bold h-[40px] rounded-xl hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+        <span class="material-symbols-outlined text-[16px]">edit</span>
+        Edit Details
+      </a>
+      {% endif %}
+    `;
+}
+
+function showEmployeeDetails(pk, name, initials, email, department, role, status) {
+    openDrawer();
+    document.getElementById('drawer-title').innerText = "Employee Info";
+
+    const isStatusActive = status.toUpperCase() === 'ACTIVE';
+    const statusPillClass = isStatusActive 
+        ? 'bg-secondary/10 text-secondary border border-secondary/20 glow-active' 
+        : 'bg-outline-variant/10 text-outline border border-outline-variant/20';
+
+    document.getElementById('drawer-content').innerHTML = `
+      <div class="flex flex-col gap-lg">
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Employee Name</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${name}</div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Email Address</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${email}</div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Assigned Department</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${department}</div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">System Role</label>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-medium text-primary">${role}</div>
+        </div>
+        <div>
+          <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Status</label>
+          <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-md ${statusPillClass} font-label-caps text-[10px] w-max">${status}</div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('drawer-footer').innerHTML = `
+      <button onclick="closeDrawer()" class="flex-1 bg-surface-container-high text-on-surface font-body-bold h-[40px] rounded-xl hover:bg-surface-container-highest transition-all">Cancel</button>
+      {% if can_manage %}
+      <a href="/org/employees/${pk}/promote/" class="flex-1 bg-primary-container text-on-primary-container font-body-bold h-[40px] rounded-xl hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+        <span class="material-symbols-outlined text-[16px]">how_to_reg</span>
+        Assign Role
+      </a>
+      {% endif %}
+    `;
+}
+
+function selectFirstItem(tabId) {
+    const activePanel = document.getElementById('tab-panel-' + tabId);
+    if (!activePanel) return;
+    const firstRow = activePanel.querySelector('[onclick]');
+    if (firstRow) {
+        firstRow.click();
+    } else {
+        closeDrawer();
+    }
+}
+
+function searchTable(query) {
+    const activePanel = document.querySelector('.tab-panel:not(.hidden)');
+    if (!activePanel) return;
+
+    const rows = activePanel.querySelectorAll('.table-row-hover');
+    const lowerQuery = query.toLowerCase();
+
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        if (text.includes(lowerQuery)) {
+            row.style.display = 'grid';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Count depts with head to show in stat card
+    const deptRows = document.querySelectorAll('#tab-panel-departments [onclick]');
+    let deptsWithHead = 0;
+    deptRows.forEach(row => {
+        if (!row.innerText.includes('Unassigned')) {
+            deptsWithHead++;
+        }
+    });
+
+    const deptHeadCountEl = document.getElementById('stat-dept-heads');
+    if (deptHeadCountEl) {
+        deptHeadCountEl.innerText = deptsWithHead;
+    }
+
+    // Auto-select first item in default tab (departments)
+    selectFirstItem('departments');
+});
+</script>
+</body>
+</html>
