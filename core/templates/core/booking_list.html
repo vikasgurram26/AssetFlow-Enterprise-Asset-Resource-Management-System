@@ -163,87 +163,10 @@
 <body class="bg-[#0E0F12] text-on-surface font-body-base antialiased overflow-y-auto">
 <!-- Shell Layout Container -->
 <div class="flex min-h-screen w-full">
-<!-- SideNavBar -->
-<nav class="hidden md:flex bg-surface-container-low border-r border-outline-variant h-screen w-[220px] fixed left-0 top-0 flex-col py-xl z-50">
-    <!-- Header Brand -->
-    <div class="px-lg pb-xl flex items-center gap-md">
-        <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">layers</span>
-        </div>
-        <div>
-            <h1 class="font-headline-md text-headline-md font-bold text-on-surface">AssetFlow</h1>
-            <p class="font-label-caps text-label-caps text-on-surface-variant">Enterprise Admin</p>
-        </div>
-    </div>
-    
-    <!-- CTA -->
-    <div class="px-lg mb-xl">
-        <a class="w-full bg-[#6C8CFF] text-[#0E0F12] font-body-bold text-body-bold h-9 rounded flex items-center justify-center gap-sm hover:opacity-90 transition-opacity no-underline text-xs" href="{% url 'asset_create' %}">
-            <span class="material-symbols-outlined text-[16px]">add</span>
-            Register Asset
-        </a>
-    </div>
-    
-    <!-- Navigation Links -->
-    <div class="flex-1 overflow-y-auto">
-        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'dashboard' %}">
-            <span class="material-symbols-outlined">dashboard</span>
-            <span class="font-body-base text-body-base">Dashboard</span>
-        </a>
-        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'org_setup' %}">
-            <span class="material-symbols-outlined">domain</span>
-            <span class="font-body-base text-body-base">Organization</span>
-        </a>
-        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'asset_list' %}">
-            <span class="material-symbols-outlined">inventory_2</span>
-            <span class="font-body-base text-body-base">Assets</span>
-        </a>
-        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'transfer_list' %}">
-            <span class="material-symbols-outlined">sync_alt</span>
-            <span class="font-body-base text-body-base">Allocation</span>
-        </a>
-        <!-- Active State -->
-        <a class="flex items-center gap-md px-lg py-md text-primary bg-primary-container/10 border-r-2 border-primary cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'booking_list' %}">
-            <span class="material-symbols-outlined">calendar_month</span>
-            <span class="font-body-bold text-body-bold">Booking</span>
-        </a>
-        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'maintenance_list' %}">
-            <span class="material-symbols-outlined">build</span>
-            <span class="font-body-base text-body-base">Maintenance</span>
-        </a>
-        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'audit_list' %}">
-            <span class="material-symbols-outlined">fact_check</span>
-            <span class="font-body-base text-body-base">Audit</span>
-        </a>
-        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'reports' %}">
-            <span class="material-symbols-outlined">analytics</span>
-            <span class="font-body-base text-body-base">Reports</span>
-        </a>
-        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'notification_list' %}">
-            <span class="material-symbols-outlined">notifications</span>
-            <span class="font-body-base text-body-base">Notifications</span>
-        </a>
-    </div>
-    
-    <!-- User Profile (Bottom) -->
-    <div class="px-lg pt-md mt-auto border-t border-outline-variant">
-        <div class="flex items-center gap-md p-sm rounded transition-colors -ml-sm">
-            <div class="flex-1 min-w-0">
-                <p class="font-body-bold text-body-bold text-on-surface truncate">{{ user.get_full_name|default:user.username }}</p>
-                <p class="font-label-caps text-label-caps text-on-surface-variant truncate">{{ user.get_role_display }}</p>
-            </div>
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit" class="text-text-muted hover:text-danger transition-colors bg-none border-none p-1 cursor-pointer flex items-center">
-                    <span class="material-symbols-outlined text-[18px]">logout</span>
-                </button>
-            </form>
-        </div>
-    </div>
-</nav>
+{% include "core/includes/sidebar.html" %}
 
 <!-- Main Content Area -->
-<main class="flex-1 ml-0 md:ml-[220px] flex flex-col min-h-screen relative bg-[#0E0F12]">
+<main class="flex-1 ml-0 md:ml-[260px] flex flex-col min-h-screen relative bg-[#0E0F12]">
     <!-- TopNavBar -->
     <header class="h-14 bg-surface border-b border-outline-variant flex items-center justify-between px-xl shrink-0 z-40">
         <div class="flex items-center gap-md">

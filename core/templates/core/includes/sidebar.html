@@ -1,0 +1,131 @@
+<!-- Modern Sidebar -->
+<nav class="h-screen w-[260px] fixed left-0 top-0 bg-surface/80 backdrop-blur-xl border-r border-surface-border flex flex-col py-8 z-50">
+    <div class="px-8 mb-10 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(129,156,255,0.3)]">
+            <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1">layers</span>
+        </div>
+        <div>
+            <h1 class="text-base font-semibold tracking-wide text-text-main">AssetFlow</h1>
+            <p class="text-[11px] font-medium text-text-muted uppercase tracking-wider mt-0.5">Enterprise</p>
+        </div>
+    </div>
+    
+    <div class="flex flex-col gap-1 px-4 flex-1 overflow-y-auto">
+        <!-- Dashboard Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'dashboard' %}">
+            {% if request.resolver_match.url_name == 'dashboard' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span class="text-sm font-medium">Dashboard</span>
+        </a>
+        
+        <!-- Organization Setup Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'org_setup' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'org_setup' %}">
+            {% if request.resolver_match.url_name == 'org_setup' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">domain</span>
+            <span class="text-sm font-medium">Organization</span>
+        </a>
+        
+        <!-- Assets Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'asset' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'asset_list' %}">
+            {% if 'asset' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+            <span class="text-sm font-medium">Assets</span>
+        </a>
+        
+        <!-- Allocation & Transfer Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'transfer' in request.resolver_match.url_name or 'allocation' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'transfer_list' %}">
+            {% if 'transfer' in request.resolver_match.url_name or 'allocation' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+            <span class="text-sm font-medium">Allocation</span>
+        </a>
+        
+        <!-- Booking Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'booking' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'booking_list' %}">
+            {% if 'booking' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+            <span class="text-sm font-medium">Booking</span>
+        </a>
+        
+        <!-- Maintenance Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'maintenance' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'maintenance_list' %}">
+            {% if 'maintenance' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">build</span>
+            <span class="text-sm font-medium">Maintenance</span>
+        </a>
+        
+        <!-- Audit Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'audit' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'audit_list' %}">
+            {% if 'audit' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">fact_check</span>
+            <span class="text-sm font-medium">Audit</span>
+        </a>
+        
+        <div class="mt-6 mb-2 px-4">
+            <p class="text-[10px] font-semibold text-text-faint uppercase tracking-wider">Insights</p>
+        </div>
+        
+        <!-- Reports Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'report' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'reports' %}">
+            {% if 'report' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">analytics</span>
+            <span class="text-sm font-medium">Reports</span>
+        </a>
+        
+        <!-- Activity Log Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'activity_log' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'activity_log' %}">
+            {% if request.resolver_match.url_name == 'activity_log' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">history</span>
+            <span class="text-sm font-medium">Activity Log</span>
+        </a>
+        
+        <!-- Notifications Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'notification_list' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'notification_list' %}">
+            {% if request.resolver_match.url_name == 'notification_list' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">notifications</span>
+            <span class="text-sm font-medium">Notifications</span>
+            {% if unread_notification_count %}
+            <span class="ml-auto bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">{{ unread_notification_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+    
+    <div class="px-6 mt-auto flex flex-col gap-4">
+        <a class="w-full bg-text-main hover:bg-white text-surface text-sm font-semibold h-10 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] no-underline" href="{% url 'asset_create' %}">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Register Asset
+        </a>
+        
+        <div class="pt-4 border-t border-surface-border flex items-center justify-between">
+            <div class="min-w-0">
+                <div class="text-xs font-semibold text-text-main truncate">{{ user.get_full_name|default:user.username }}</div>
+                <div class="text-[10px] text-text-muted mt-0.5">{{ user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="text-text-muted hover:text-danger transition-colors bg-none border-none p-1 cursor-pointer flex items-center">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>

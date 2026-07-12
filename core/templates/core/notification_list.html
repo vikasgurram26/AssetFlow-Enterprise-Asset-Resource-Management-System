@@ -133,83 +133,12 @@
 </head>
 <body class="font-body-base antialiased h-screen flex overflow-hidden">
 
-<!-- SideNavBar -->
-<aside class="w-[220px] bg-[#12141C] border-r border-[#2A2C33] flex flex-col h-screen fixed left-0 top-0 z-30">
-    <!-- Brand -->
-    <div class="h-[56px] px-xl flex items-center border-b border-[#2A2C33]">
-        <span class="material-symbols-outlined text-primary mr-sm text-[24px]">grid_view</span>
-        <span class="font-bold text-[15px] tracking-tight text-on-surface">AssetFlow</span>
-    </div>
-    <!-- Nav Items -->
-    <div class="flex-1 py-lg space-y-[2px] px-md overflow-y-auto">
-        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'dashboard' %}">
-            <span class="material-symbols-outlined text-[20px]">dashboard</span>
-            <span class="text-[13px] font-medium">Dashboard</span>
-        </a>
-        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'org_setup' %}">
-            <span class="material-symbols-outlined text-[20px]">domain</span>
-            <span class="text-[13px] font-medium">Organization</span>
-        </a>
-        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'asset_list' %}">
-            <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-            <span class="text-[13px] font-medium">Assets</span>
-        </a>
-        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'transfer_list' %}">
-            <span class="material-symbols-outlined text-[20px]">sync_alt</span>
-            <span class="text-[13px] font-medium">Allocation</span>
-        </a>
-        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'booking_list' %}">
-            <span class="material-symbols-outlined text-[20px]">calendar_month</span>
-            <span class="text-[13px] font-medium">Booking</span>
-        </a>
-        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'maintenance_list' %}">
-            <span class="material-symbols-outlined text-[20px]">build</span>
-            <span class="text-[13px] font-medium">Maintenance</span>
-        </a>
-        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'audit_list' %}">
-            <span class="material-symbols-outlined text-[20px]">fact_check</span>
-            <span class="text-[13px] font-medium">Audit</span>
-        </a>
-        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'reports' %}">
-            <span class="material-symbols-outlined text-[20px]">analytics</span>
-            <span class="text-[13px] font-medium">Reports</span>
-        </a>
-        <a class="flex items-center px-md py-sm rounded text-on-surface bg-[#1F2126] border-l-[3px] border-l-primary-container transition-colors gap-md" href="{% url 'notification_list' %}">
-            <span class="material-symbols-outlined text-[20px] text-primary" style="font-variation-settings: 'FILL' 1;">notifications</span>
-            <span class="text-[13px] font-semibold">Notifications</span>
-        </a>
-    </div>
-    <!-- Footer Profile -->
-    <div class="p-lg border-t border-[#2A2C33] flex flex-col gap-md">
-        {% if can_manage %}
-        <a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-[12px] h-[36px] rounded flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
-            <span class="material-symbols-outlined text-[16px]">add</span>
-            Register Asset
-        </a>
-        {% endif %}
-        
-        <div class="flex items-center gap-md pt-xs">
-            <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold text-xs">
-                {{ request.user.username|slice:":2"|upper }}
-            </div>
-            <div class="flex-1 min-w-0">
-                <div class="text-[13px] font-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
-                <div class="text-[11px] text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
-            </div>
-            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
-                {% csrf_token %}
-                <button type="submit" class="text-on-surface-variant hover:text-error transition-colors p-1 flex items-center bg-transparent border-0 cursor-pointer" title="Sign Out">
-                    <span class="material-symbols-outlined text-[18px]">logout</span>
-                </button>
-            </form>
-        </div>
-    </div>
-</aside>
+{% include "core/includes/sidebar.html" %}
 
 <!-- Main Content Wrapper -->
-<div class="flex-1 flex flex-col md:ml-[220px] relative w-full h-screen">
+<div class="flex-1 flex flex-col md:ml-[260px] relative w-full h-screen">
 <!-- TopNavBar -->
-<header class="bg-surface dark:bg-surface h-14 fixed top-0 right-0 md:left-[220px] left-0 z-40 border-b border-outline-variant dark:border-outline-variant flex items-center justify-between px-xl w-full md:w-auto">
+<header class="bg-surface dark:bg-surface h-14 fixed top-0 right-0 md:left-[260px] left-0 z-40 border-b border-outline-variant dark:border-outline-variant flex items-center justify-between px-xl w-full md:w-auto">
     <!-- Mobile Brand -->
     <div class="md:hidden flex items-center gap-sm">
         <h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tight">AssetFlow</h1>

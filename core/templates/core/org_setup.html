@@ -182,85 +182,16 @@
 </style>
 </head>
 <body class="font-body-base text-body-base antialiased flex h-screen overflow-hidden bg-background">
-<!-- SideNavBar -->
-<nav class="bg-surface-container-lowest/80 backdrop-blur-xl h-screen w-[240px] fixed left-0 top-0 border-r border-hairline flex flex-col h-full py-xl z-50 transition-all duration-300">
-<div class="px-xl mb-xl">
-<h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-fixed-dim">AssetFlow</h1>
-<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mt-1 opacity-70">Enterprise Admin</p>
-</div>
-<div class="flex-1 flex flex-col gap-sm overflow-y-auto mt-lg px-md">
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if request.resolver_match.url_name == 'dashboard' %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'dashboard' %}">
-<span class="material-symbols-outlined {% if request.resolver_match.url_name == 'dashboard' %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if request.resolver_match.url_name == 'dashboard' %}1{% else %}0{% endif %};">dashboard</span>
-<span class="font-body-bold">Dashboard</span>
-</a>
-<!-- Active State for Organization -->
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if request.resolver_match.url_name == 'org_setup' %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'org_setup' %}">
-<span class="material-symbols-outlined {% if request.resolver_match.url_name == 'org_setup' %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if request.resolver_match.url_name == 'org_setup' %}1{% else %}0{% endif %};">domain</span>
-<span class="font-body-bold">Organization</span>
-</a>
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'asset' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'asset_list' %}">
-<span class="material-symbols-outlined {% if 'asset' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'asset' in request.resolver_match.url_name %}1{% else %}0{% endif %};">inventory_2</span>
-<span class="font-body-bold">Assets</span>
-</a>
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'transfer' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'transfer_list' %}">
-<span class="material-symbols-outlined {% if 'transfer' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'transfer' in request.resolver_match.url_name %}1{% else %}0{% endif %};">sync_alt</span>
-<span class="font-body-bold">Allocation</span>
-</a>
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'booking' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'booking_list' %}">
-<span class="material-symbols-outlined {% if 'booking' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'booking' in request.resolver_match.url_name %}1{% else %}0{% endif %};">calendar_month</span>
-<span class="font-body-bold">Booking</span>
-</a>
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'maintenance' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'maintenance_list' %}">
-<span class="material-symbols-outlined {% if 'maintenance' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'maintenance' in request.resolver_match.url_name %}1{% else %}0{% endif %};">build</span>
-<span class="font-body-bold">Maintenance</span>
-</a>
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'audit' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'audit_list' %}">
-<span class="material-symbols-outlined {% if 'audit' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'audit' in request.resolver_match.url_name %}1{% else %}0{% endif %};">fact_check</span>
-<span class="font-body-bold">Audit</span>
-</a>
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'report' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'reports' %}">
-<span class="material-symbols-outlined {% if 'report' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'report' in request.resolver_match.url_name %}1{% else %}0{% endif %};">analytics</span>
-<span class="font-body-bold">Reports</span>
-</a>
-<a class="flex items-center gap-md px-lg py-md rounded-xl {% if 'notification' in request.resolver_match.url_name %}text-primary bg-primary-container/10 border border-primary/20 shadow-[inset_0_0_20px_rgba(108,140,255,0.05)]{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all cursor-pointer group{% endif %}" href="{% url 'notification_list' %}">
-<span class="material-symbols-outlined {% if 'notification' in request.resolver_match.url_name %}text-primary{% else %}text-outline group-hover:text-primary transition-colors{% endif %}" style="font-variation-settings: 'FILL' {% if 'notification' in request.resolver_match.url_name %}1{% else %}0{% endif %};">notifications</span>
-<span class="font-body-bold">Notifications</span>
-</a>
-</div>
-<div class="px-xl mt-auto pt-lg flex flex-col gap-md">
-{% if can_manage %}
-<a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-body-bold h-[40px] rounded-xl flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
-<span class="material-symbols-outlined text-[18px]">add</span>
-Register Asset
-</a>
-{% endif %}
-
-<!-- User Profile Card -->
-<div class="border-t border-hairline pt-lg pb-md">
-    <div class="flex items-center gap-md">
-        <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold">
-            {{ request.user.username|slice:":2"|upper }}
-        </div>
-        <div class="flex-1 min-w-0">
-            <div class="font-body-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
-            <div class="text-xs text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
-        </div>
-        <a href="{% url 'logout' %}" class="text-outline hover:text-error transition-colors p-1 flex items-center" title="Sign Out">
-            <span class="material-symbols-outlined text-[20px]">logout</span>
-        </a>
-    </div>
-</div>
-</div>
-</nav>
+{% include "core/includes/sidebar.html" %}
 
 <!-- Main Content Area -->
-<div class="flex-1 ml-[240px] flex flex-col min-h-screen relative">
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen relative">
 <!-- Background decorative elements -->
 <div class="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-primary/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
 <div class="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
 
 <!-- TopNavBar -->
-<header class="bg-surface/50 backdrop-blur-md h-16 fixed top-0 right-0 left-[240px] z-40 border-b border-hairline flex items-center justify-between px-xl w-auto">
+<header class="bg-surface/50 backdrop-blur-md h-16 fixed top-0 right-0 left-[260px] z-40 border-b border-hairline flex items-center justify-between px-xl w-auto">
 <div class="flex-1 flex items-center">
 <div class="relative w-64">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
