@@ -268,8 +268,16 @@ def transfer_decide(request, pk, decision):
 @login_required(login_url="login")
 def transfer_list(request):
     transfers = TransferRequest.objects.select_related("asset", "to_employee", "to_department", "requested_by")
+    assets = Asset.objects.select_related("category", "department").all()
+    employees = User.objects.filter(status="ACTIVE").order_by("first_name", "last_name")
+    departments = Department.objects.filter(status="ACTIVE").order_by("name")
     return render(request, "core/transfer_list.html", {
-        "transfers": transfers, "can_approve": request.user.has_role(*APPROVES_TRANSFERS),
+        "transfers": transfers,
+        "can_approve": request.user.has_role(*APPROVES_TRANSFERS),
+        "assets": assets,
+        "employees": employees,
+        "departments": departments,
+        "can_manage": request.user.has_role(*MANAGES_ASSETS),
     })
 
 

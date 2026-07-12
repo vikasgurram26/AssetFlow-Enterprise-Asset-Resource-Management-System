@@ -1,26 +1,784 @@
-{% extends "core/base.html" %}
+{% load static %}
 {% load core_extras %}
-{% block page_title %}Allocation & transfer{% endblock %}
-{% block content %}
-<div class="card-clean">
-  <table class="data w-100 mb-0">
-    <thead><tr><th>Asset</th><th>To</th><th>Requested by</th><th>Status</th><th></th></tr></thead>
-    <tbody>
-      {% for t in transfers %}
-      <tr>
-        <td><a href="{% url 'asset_detail' t.asset.pk %}">{{ t.asset.asset_tag }}</a></td>
-        <td>{{ t.to_employee|default:t.to_department }}</td>
-        <td>{{ t.requested_by }}</td>
-        <td><span class="pill {{ t.status|status_pill }}">{{ t.get_status_display }}</span></td>
-        <td class="text-end">
-          {% if can_approve and t.status == "REQUESTED" %}
-          <form method="post" action="{% url 'transfer_decide' t.pk 'approve' %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Approve</button></form>
-          <form method="post" action="{% url 'transfer_decide' t.pk 'reject' %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Reject</button></form>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No transfer requests yet.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AssetFlow - Allocation &amp; Transfer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#141c27",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "on-primary": "#002780",
+                        "surface-container-lowest": "#070f19",
+                        "surface-bright": "#323a46",
+                        "surface-tint": "#b6c4ff",
+                        "on-surface": "#dbe3f3",
+                        "tertiary-container": "#bd8a20",
+                        "on-primary-container": "#002376",
+                        "secondary": "#51df9c",
+                        "tertiary-fixed": "#ffdea9",
+                        "outline-variant": "#444653",
+                        "on-primary-fixed": "#001550",
+                        "surface-container-highest": "#2d3541",
+                        "on-error": "#690005",
+                        "surface-container-high": "#222a36",
+                        "primary": "#b6c4ff",
+                        "on-secondary-container": "#003b24",
+                        "on-primary-fixed-variant": "#0d3bad",
+                        "on-tertiary-fixed": "#271900",
+                        "on-surface-variant": "#c4c5d5",
+                        "tertiary": "#f7bd51",
+                        "primary-container": "#6c8cff",
+                        "on-tertiary": "#422c00",
+                        "inverse-surface": "#dbe3f3",
+                        "error": "#ffb4ab",
+                        "primary-fixed": "#dce1ff",
+                        "on-secondary-fixed": "#002112",
+                        "surface-dim": "#0c141f",
+                        "on-background": "#dbe3f3",
+                        "on-tertiary-fixed-variant": "#5e4100",
+                        "surface-container": "#18202c",
+                        "surface-variant": "#2d3541",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#51df9c",
+                        "on-secondary-fixed-variant": "#005233",
+                        "inverse-primary": "#3255c6",
+                        "secondary-container": "#00b173",
+                        "outline": "#8e909f",
+                        "secondary-fixed": "#71fcb6",
+                        "on-secondary": "#003822",
+                        "surface": "#0c141f",
+                        "on-tertiary-container": "#3c2800",
+                        "inverse-on-surface": "#29313d",
+                        "tertiary-fixed-dim": "#f7bd51",
+                        "background": "#0c141f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xl": "24px",
+                        "xxl": "32px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "margin-desktop": "32px",
+                        "lg": "16px",
+                        "margin-mobile": "16px",
+                        "md": "12px"
+                    },
+                    "fontFamily": {
+                        "mono-tabular": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-bold": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-base": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg-mobile": ["Inter"]
+                    }
+                }
+            }
+        }
+</script>
+<style>
+        body { background-color: #0E0F12; color: #dbe3f3; }
+        .hairline-border { border: 1px solid #2A2C33; }
+        .surface-level-1 { background-color: #17181C; }
+        .surface-level-2 { background-color: #1F2126; }
+        .accent-highlight { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+        .status-danger { color: #F0576B; background-color: #2C1418; border: 1px solid rgba(240, 87, 107, 0.15); }
+        .btn-primary { background-color: #6C8CFF; color: #0E0F12; }
+        .btn-primary:hover { background-color: #5577ee; }
+        .btn-secondary { background-color: #17181C; border: 1px solid #2A2C33; color: #c4c5d5; }
+        .btn-disabled { background-color: #1F2126; color: #444653; cursor: not-allowed; }
+        .glass-panel { background: rgba(24, 32, 44, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #2d3541; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #444653; }
+</style>
+</head>
+<body class="font-body-base text-body-base antialiased flex h-screen overflow-hidden bg-background">
+
+<!-- SideNavBar -->
+<aside class="w-[220px] bg-[#12141C] border-r border-[#2A2C33] flex flex-col h-screen fixed left-0 top-0 z-30">
+    <!-- Brand -->
+    <div class="h-[56px] px-xl flex items-center border-b border-[#2A2C33]">
+        <span class="material-symbols-outlined text-primary mr-sm text-[24px]" data-icon="grid_view">grid_view</span>
+        <span class="font-bold text-[15px] tracking-tight text-on-surface">AssetFlow</span>
+    </div>
+    <!-- Nav Items -->
+    <div class="flex-1 py-lg space-y-[2px] px-md overflow-y-auto custom-scroll">
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+            <span class="text-[13px] font-medium">Dashboard</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[20px]" data-icon="domain">domain</span>
+            <span class="text-[13px] font-medium">Organization</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[20px]" data-icon="inventory_2">inventory_2</span>
+            <span class="text-[13px] font-medium">Assets</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface bg-[#1F2126] border-l-[3px] border-l-primary-container transition-colors gap-md" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[20px] text-primary" data-icon="sync_alt">sync_alt</span>
+            <span class="text-[13px] font-semibold">Allocation</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[20px]" data-icon="calendar_month">calendar_month</span>
+            <span class="text-[13px] font-medium">Booking</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'maintenance_list' %}">
+            <span class="material-symbols-outlined text-[20px]" data-icon="build">build</span>
+            <span class="text-[13px] font-medium">Maintenance</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[20px]" data-icon="fact_check">fact_check</span>
+            <span class="text-[13px] font-medium">Audit</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined text-[20px]" data-icon="analytics">analytics</span>
+            <span class="text-[13px] font-medium">Reports</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+            <span class="text-[13px] font-medium">Notifications</span>
+        </a>
+    </div>
+    <!-- Footer Profile -->
+    <div class="p-lg border-t border-[#2A2C33] flex flex-col gap-md">
+        {% if can_manage %}
+        <a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-[12px] h-[36px] rounded flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Register Asset
+        </a>
+        {% endif %}
+        
+        <div class="flex items-center gap-md pt-xs">
+            <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold text-xs">
+                {{ request.user.username|slice:":2"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="text-[11px] text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="text-on-surface-variant hover:text-error transition-colors p-1 flex items-center bg-transparent border-0 cursor-pointer" title="Sign Out">
+                    <span class="material-symbols-outlined text-[18px]" data-icon="logout">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<!-- TopNavBar -->
+<nav class="h-[56px] bg-[#12141C] border-b border-[#2A2C33] flex items-center justify-between px-xl fixed top-0 left-[220px] right-0 z-20">
+    <div class="flex items-center gap-md flex-1">
+        <h1 class="text-[16px] font-bold text-on-surface">Asset Allocation &amp; Transfer Management</h1>
+    </div>
+    <div class="flex items-center gap-lg">
+        <div class="flex items-center gap-md">
+            <span class="text-on-surface-variant text-[12px]">System Online</span>
+            <div class="w-[1px] h-[16px] bg-[#2A2C33]"></div>
+            <button class="relative text-on-surface-variant hover:text-on-surface transition-colors flex items-center">
+                <span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+                <span class="absolute -top-1 -right-1 w-[8px] h-[8px] bg-error rounded-full"></span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content Area -->
+<main class="ml-[220px] mt-[56px] h-[calc(100vh-56px)] flex overflow-hidden bg-surface-dim">
+    
+    <!-- Left Pane: Asset Search/Picker List (60%) -->
+    <div class="w-[60%] flex flex-col border-r border-outline-variant bg-surface-container-lowest">
+        
+        <!-- Pane Header -->
+        <div class="px-xl py-lg border-b border-[#2A2C33] flex justify-between items-center bg-[#12141C]">
+            <div>
+                <h2 class="font-headline-md text-headline-md text-on-surface font-bold text-[18px]">Select Asset</h2>
+                <p class="text-on-surface-variant text-body-base text-[13px] mt-xs">Choose an asset to allocate, return, or request transfer.</p>
+            </div>
+            
+            <!-- Filter Actions -->
+            <div class="flex gap-sm">
+                <button onclick="toggleFilters()" class="h-[28px] px-md rounded bg-[#1F2126] border border-[#2A2C33] text-on-surface-variant text-[12px] hover:text-on-surface transition-colors flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[16px]" data-icon="filter_list">filter_list</span> Filter
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Chips Container -->
+        <div id="filter-chips-container" class="hidden px-xl py-sm border-b border-[#2A2C33] bg-[#0E0F12] flex gap-xs overflow-x-auto custom-scroll">
+            <button onclick="setFilter('all')" id="filter-chip-all" class="px-md py-xs rounded-full bg-primary-container text-on-primary-container text-[11px] font-bold tracking-wider uppercase border border-primary/20">All</button>
+            <button onclick="setFilter('available')" id="filter-chip-available" class="px-md py-xs rounded-full bg-[#1F2126] text-on-surface-variant text-[11px] font-bold tracking-wider uppercase border border-[#2A2C33] hover:text-on-surface">Available</button>
+            <button onclick="setFilter('allocated')" id="filter-chip-allocated" class="px-md py-xs rounded-full bg-[#1F2126] text-on-surface-variant text-[11px] font-bold tracking-wider uppercase border border-[#2A2C33] hover:text-on-surface">Allocated</button>
+            <button onclick="setFilter('pending')" id="filter-chip-pending" class="px-md py-xs rounded-full bg-[#1F2126] text-on-surface-variant text-[11px] font-bold tracking-wider uppercase border border-[#2A2C33] hover:text-on-surface">Pending Request</button>
+        </div>
+
+        <!-- KPI Cards Grid -->
+        <div class="grid grid-cols-4 gap-md p-lg border-b border-[#2A2C33] bg-[#0E0F12]">
+            <div class="p-md rounded bg-[#12141C] border border-[#2A2C33]">
+                <div class="text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider">Total Requests</div>
+                <div class="text-[20px] font-bold text-on-surface mt-xs" id="stat-total-requests">0</div>
+            </div>
+            <div class="p-md rounded bg-[#12141C] border border-[#2A2C33]">
+                <div class="text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider">Pending</div>
+                <div class="text-[20px] font-bold text-primary mt-xs" id="stat-pending-approvals">0</div>
+            </div>
+            <div class="p-md rounded bg-[#12141C] border border-[#2A2C33]">
+                <div class="text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider">Active</div>
+                <div class="text-[20px] font-bold text-secondary mt-xs" id="stat-active-allocations">0</div>
+            </div>
+            <div class="p-md rounded bg-[#12141C] border border-[#2A2C33]">
+                <div class="text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider">Overdue</div>
+                <div class="text-[20px] font-bold text-error mt-xs" id="stat-overdue-allocations">0</div>
+            </div>
+        </div>
+
+        <!-- Django Messages inside Main Layout -->
+        {% if messages %}
+        <div class="p-lg border-b border-[#2A2C33] bg-[#0E0F12] space-y-xs">
+            {% for message in messages %}
+            <div class="p-md rounded border {% if message.tags == 'error' %}border-error/30 bg-error-container/10 text-error{% else %}border-secondary/30 bg-secondary-container/10 text-secondary{% endif %} flex items-center justify-between text-[13px]">
+                <div class="flex items-center gap-md">
+                    <span class="material-symbols-outlined text-[18px]">
+                        {% if message.tags == 'error' %}error{% else %}check_circle{% endif %}
+                    </span>
+                    <p class="font-body-bold">{{ message }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Search Input inside Pane -->
+        <div class="p-lg border-b border-[#2A2C33] bg-[#12141C]">
+            <div class="relative flex items-center bg-[#0E0F12] border border-[#2A2C33] rounded px-md h-10 focus-within:border-primary transition-all w-full">
+                <span class="material-symbols-outlined text-on-surface-variant text-[18px] mr-sm" data-icon="search">search</span>
+                <input id="asset-search-input" oninput="searchAssets(this.value)" class="bg-transparent border-none focus:ring-0 text-on-surface text-sm w-full h-full p-0" placeholder="Search by ID, Model, or Serial..." type="text"/>
+                <button id="clear-search-btn" onclick="clearSearch()" class="text-on-surface-variant hover:text-on-surface hidden">
+                    <span class="material-symbols-outlined text-[16px]" data-icon="close">close</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- List Area (High-Density Table format) -->
+        <div class="flex-1 overflow-y-auto custom-scroll bg-[#0E0F12]">
+            <!-- Table Header -->
+            <div class="grid grid-cols-[110px_1fr_130px_100px] gap-md px-xl py-sm bg-[#12141C] border-b border-[#2A2C33] sticky top-0 z-10">
+                <div class="font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase">ASSET ID</div>
+                <div class="font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase">MODEL / DETAILS</div>
+                <div class="font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase">STATUS</div>
+                <div class="font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase text-right">LOCATION</div>
+            </div>
+            
+            <!-- List Items -->
+            <div class="divide-y divide-[#2A2C33]">
+                {% for a in assets %}
+                <div id="asset-item-{{ a.pk }}"
+                     onclick="selectAsset('asset-item-{{ a.pk }}', '{{ a.pk }}', '{{ a.asset_tag|escapejs }}', '{{ a.name|escapejs }}', '{{ a.status|escapejs }}', '{% if a.status == 'ALLOCATED' %}{% if a.current_allocation.employee %}{{ a.current_allocation.employee.get_full_name|default:a.current_allocation.employee.username|escapejs }}{% else %}{{ a.current_allocation.department.name|escapejs }}{% endif %}{% endif %}', '{{ a.location|default:''|escapejs }}', '{{ a.serial_number|escapejs }}', '{{ a.category.name|escapejs }}', '{% if a.status == 'ALLOCATED' %}{{ a.current_allocation.pk }}{% endif %}', '{% for t in transfers %}{% if t.asset_id == a.pk and t.status == 'REQUESTED' %}true{% endif %}{% endfor %}', '{% for t in transfers %}{% if t.asset_id == a.pk and t.status == 'REQUESTED' %}{{ t.pk }}{% endif %}{% endfor %}', '{% for t in transfers %}{% if t.asset_id == a.pk and t.status == 'REQUESTED' %}{% if t.to_employee %}{{ t.to_employee.get_full_name|default:t.to_employee.username|escapejs }}{% else %}{{ t.to_department.name|escapejs }}{% endif %}{% endif %}{% endfor %}', '{% for t in transfers %}{% if t.asset_id == a.pk and t.status == 'REQUESTED' %}{{ t.requested_by.get_full_name|default:t.requested_by.username|escapejs }}{% endif %}{% endfor %}', '{% for t in transfers %}{% if t.asset_id == a.pk and t.status == 'REQUESTED' %}{{ t.requested_at|date:'M d, Y'|escapejs }}{% endif %}{% endfor %}')"
+                     class="grid grid-cols-[110px_1fr_130px_100px] gap-md px-xl py-sm items-center h-[56px] border-b border-[#2A2C33] cursor-pointer hover:bg-[#17181C] transition-colors"
+                     data-status="{{ a.status }}"
+                     data-overdue="{% if a.is_overdue %}true{% else %}false{% endif %}"
+                     data-pending-transfer="{% for t in transfers %}{% if t.asset_id == a.pk and t.status == 'REQUESTED' %}true{% endif %}{% endfor %}">
+                    
+                    <div class="font-mono-tabular text-mono-tabular text-on-surface-variant text-[13px]">{{ a.asset_tag }}</div>
+                    <div class="min-w-0">
+                        <div class="text-on-surface font-body-bold text-[13px] truncate">{{ a.name }}</div>
+                        <div class="text-on-surface-variant text-body-base text-[11px] truncate opacity-70">SN: {{ a.serial_number }}</div>
+                    </div>
+                    <div>
+                        {% if a.status == 'AVAILABLE' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider text-[#3ECF8E] bg-[#122A22] border border-[#3ECF8E]/15 uppercase">
+                            Available
+                        </span>
+                        {% elif a.status == 'ALLOCATED' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider status-danger uppercase">
+                            Allocated
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider text-[#F2B94D] bg-[#2B2212] border border-[#F2B94D]/15 uppercase">
+                            {{ a.get_status_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="text-on-surface-variant text-[12px] text-right truncate">{{ a.location|default:"—" }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Pane: Form Area (40%) -->
+    <div class="w-[40%] flex flex-col bg-[#0E0F12] relative border-l border-[#2A2C33]">
+        
+        <!-- Placeholder Empty State -->
+        <div id="no-asset-selected" class="absolute inset-0 flex flex-col items-center justify-center p-xl text-center text-on-surface-variant bg-[#0E0F12] z-20">
+            <span class="material-symbols-outlined text-[48px] text-outline/30 mb-md">inventory_2</span>
+            <h3 class="font-headline-md text-on-surface text-[15px] font-bold">No Asset Selected</h3>
+            <p class="text-body-base text-[13px] mt-xs max-w-[280px] opacity-70">Select an asset from the left pane list to configure allocations or manage transfers.</p>
+        </div>
+
+        <!-- Detail Pane Content -->
+        <div id="asset-detail-pane" class="hidden flex-1 flex flex-col h-full relative">
+            
+            <!-- Contextual Header -->
+            <div class="px-xl py-lg border-b border-[#2A2C33] bg-[#12141C]">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-xs">CURRENT SELECTION</p>
+                        <h2 class="font-headline-md text-headline-md text-on-surface font-bold text-[16px]"><span id="detail-asset-name">Dell Laptop</span> <span class="font-mono-tabular text-on-surface-variant text-[14px] ml-xs font-normal" id="detail-asset-tag">(AF-0114)</span></h2>
+                    </div>
+                    <div class="w-10 h-10 rounded bg-[#1F2126] border border-[#2A2C33] flex items-center justify-center text-on-surface-variant">
+                        <span class="material-symbols-outlined text-[20px]" id="detail-category-icon" data-icon="laptop_mac">laptop_mac</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scrollable Form Container -->
+            <div class="flex-1 overflow-y-auto p-xl space-y-xl custom-scroll pb-[100px]">
+                
+                <!-- Allocation Conflict Block Banner -->
+                <div id="banner-allocated" class="hidden p-md rounded-xl border border-error/30 bg-error-container/10 flex items-start gap-md shadow-[0_0_20px_rgba(255,180,171,0.05)]">
+                    <span class="material-symbols-outlined text-[20px] text-error">warning</span>
+                    <div>
+                        <h3 class="font-body-bold text-body-bold text-error text-[13px] font-bold mb-xs">Allocation Conflict Detected</h3>
+                        <p class="text-body-base text-[12px] opacity-90 leading-snug">
+                            This asset is currently allocated to <strong id="detail-holder-name">Priya Shah</strong>. You cannot create a direct allocation. Please submit a transfer request instead.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Pending Transfer Request Banner -->
+                <div id="banner-pending-transfer" class="hidden p-md rounded-xl border border-tertiary-container/30 bg-tertiary-container/10 flex items-start gap-md shadow-[0_0_20px_rgba(189,138,32,0.05)]">
+                    <span class="material-symbols-outlined text-[20px] text-tertiary">pending</span>
+                    <div>
+                        <h3 class="font-body-bold text-body-bold text-tertiary text-[13px] font-bold mb-xs">Pending Transfer Request</h3>
+                        <p class="text-body-base text-[12px] opacity-90 leading-snug">
+                            A transfer request to <strong id="detail-transfer-to">John Doe</strong> has been submitted by <span id="detail-transfer-by">Admin</span> on <span id="detail-transfer-at">July 12, 2026</span> and is currently awaiting approval.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 1. Allocation Form (Available Status) -->
+                <form id="allocate-form" method="post" action="" class="hidden space-y-lg">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-sm">ALLOCATE TO EMPLOYEE</label>
+                        <div class="relative flex items-center bg-[#0E0F12] border border-[#2A2C33] rounded px-md h-[36px] w-full">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[16px] mr-sm">person</span>
+                            <select name="employee" class="bg-transparent border-none text-on-surface w-full h-full p-0 focus:ring-0 text-[13px]">
+                                <option value="" class="bg-[#0E0F12]">Unassigned</option>
+                                {% for e in employees %}
+                                <option value="{{ e.pk }}" class="bg-[#0E0F12]">{{ e.get_full_name|default:e.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-sm">OR ALLOCATE TO DEPARTMENT</label>
+                        <div class="relative flex items-center bg-[#0E0F12] border border-[#2A2C33] rounded px-md h-[36px] w-full">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[16px] mr-sm">corporate_fare</span>
+                            <select name="department" class="bg-transparent border-none text-on-surface w-full h-full p-0 focus:ring-0 text-[13px]">
+                                <option value="" class="bg-[#0E0F12]">Unassigned</option>
+                                {% for d in departments %}
+                                <option value="{{ d.pk }}" class="bg-[#0E0F12]">{{ d.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-lg">
+                        <div>
+                            <label class="block font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-sm">EXPECTED RETURN DATE</label>
+                            <div class="relative flex items-center bg-[#0E0F12] border border-[#2A2C33] rounded px-md h-[36px]">
+                                <input name="expected_return_date" type="date" class="bg-transparent border-none text-on-surface w-full h-full p-0 focus:ring-0 text-[13px]"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-sm">ALLOCATION NOTES / CONDITION</label>
+                        <textarea name="notes" class="w-full bg-[#0E0F12] border border-[#2A2C33] rounded p-md text-on-surface focus:border-primary focus:ring-0 placeholder:text-outline-variant/40 text-[13px]" placeholder="Specify setup details or condition notes..." rows="3"></textarea>
+                    </div>
+
+                    <!-- Action Footer Allocation -->
+                    <div class="absolute bottom-0 left-0 right-0 h-[64px] border-t border-[#2A2C33] bg-[#12141C] flex items-center justify-between px-xl z-10">
+                        <button type="button" onclick="resetSelection()" class="h-[36px] px-lg rounded bg-transparent border border-[#2A2C33] text-on-surface-variant hover:text-on-surface transition-colors text-[13px]">
+                            Cancel
+                        </button>
+                        <button type="submit" class="h-[36px] px-lg rounded font-body-bold text-body-bold text-[13px] btn-primary transition-colors flex items-center gap-xs shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+                            <span class="material-symbols-outlined text-[16px]">save</span> Allocate Asset
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 2. Transfer Request Form (Allocated Status) -->
+                <form id="transfer-form" method="post" action="" class="hidden space-y-lg">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-sm">TRANSFER TO EMPLOYEE</label>
+                        <div class="relative flex items-center bg-[#0E0F12] border border-[#2A2C33] rounded px-md h-[36px] w-full">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[16px] mr-sm">person</span>
+                            <select name="to_employee" class="bg-transparent border-none text-on-surface w-full h-full p-0 focus:ring-0 text-[13px]">
+                                <option value="" class="bg-[#0E0F12]">Choose Employee...</option>
+                                {% for e in employees %}
+                                <option value="{{ e.pk }}" class="bg-[#0E0F12]">{{ e.get_full_name|default:e.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-sm">OR TRANSFER TO DEPARTMENT</label>
+                        <div class="relative flex items-center bg-[#0E0F12] border border-[#2A2C33] rounded px-md h-[36px] w-full">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[16px] mr-sm">corporate_fare</span>
+                            <select name="to_department" class="bg-transparent border-none text-on-surface w-full h-full p-0 focus:ring-0 text-[13px]">
+                                <option value="" class="bg-[#0E0F12]">Choose Department...</option>
+                                {% for d in departments %}
+                                <option value="{{ d.pk }}" class="bg-[#0E0F12]">{{ d.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-sm">TRANSFER JUSTIFICATION</label>
+                        <textarea name="justification" class="w-full bg-[#0E0F12] border border-[#2A2C33] rounded p-md text-on-surface focus:border-primary focus:ring-0 placeholder:text-outline-variant/40 text-[13px]" placeholder="Required context for this asset relocation request..." rows="3"></textarea>
+                    </div>
+
+                    <!-- Action Footer Transfer -->
+                    <div class="absolute bottom-0 left-0 right-0 h-[64px] border-t border-[#2A2C33] bg-[#12141C] flex items-center justify-between px-xl z-10">
+                        <button type="button" onclick="resetSelection()" class="h-[36px] px-lg rounded bg-transparent border border-[#2A2C33] text-on-surface-variant hover:text-on-surface transition-colors text-[13px]">
+                            Cancel
+                        </button>
+                        <button type="submit" class="h-[36px] px-lg rounded font-body-bold text-body-bold text-[13px] btn-primary transition-colors flex items-center gap-xs shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+                            <span class="material-symbols-outlined text-[16px]">send</span> Request Transfer
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 3. Pending Transfer Decision (Requested State) -->
+                <div id="pending-actions" class="hidden space-y-lg">
+                    <!-- Action Footer Decider -->
+                    <div class="absolute bottom-0 left-0 right-0 h-[64px] border-t border-[#2A2C33] bg-[#12141C] flex items-center justify-between px-xl z-10">
+                        <button type="button" onclick="resetSelection()" class="h-[36px] px-lg rounded bg-transparent border border-[#2A2C33] text-on-surface-variant hover:text-on-surface transition-colors text-[13px]">
+                            Cancel
+                        </button>
+                        
+                        <div class="flex gap-md">
+                            {% if can_approve %}
+                            <form id="transfer-reject-form" method="post" action="" style="margin:0;">
+                                {% csrf_token %}
+                                <button type="submit" class="h-[36px] px-lg rounded font-body-bold text-body-bold text-[13px] bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all flex items-center gap-xs">
+                                    <span class="material-symbols-outlined text-[16px]">close</span> Reject
+                                </button>
+                            </form>
+                            <form id="transfer-approve-form" method="post" action="" style="margin:0;">
+                                {% csrf_token %}
+                                <button type="submit" class="h-[36px] px-lg rounded font-body-bold text-body-bold text-[13px] btn-primary transition-all flex items-center gap-xs shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+                                    <span class="material-symbols-outlined text-[16px]">done</span> Approve
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-on-surface-variant text-[13px] font-bold italic">Awaiting Manager Approval</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Return Form (For allocated assets, allowing them to be returned) -->
+                {% if can_manage %}
+                <div id="return-section" class="hidden border-t border-[#2A2C33] pt-xl">
+                    <h3 class="font-body-bold text-body-bold text-on-surface text-[14px] font-bold mb-md">Release / Return Asset</h3>
+                    <form id="return-form" method="post" action="" class="space-y-lg">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block font-label-caps text-label-caps text-on-surface-variant text-[11px] font-bold tracking-wider uppercase mb-sm">CONDITION NOTES (OPTIONAL)</label>
+                            <textarea name="condition_notes" class="w-full bg-[#0E0F12] border border-[#2A2C33] rounded p-md text-on-surface focus:border-primary focus:ring-0 placeholder:text-outline-variant/40 text-[13px]" placeholder="e.g. Returned in perfect condition" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-error/10 hover:bg-error/20 text-error border border-error/20 font-body-bold text-body-bold text-[13px] h-[36px] rounded transition-all flex items-center justify-center gap-xs">
+                            <span class="material-symbols-outlined text-[16px]">keyboard_return</span> Mark Asset Returned
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+function getCategoryIcon(category) {
+    if (!category) return 'inventory_2';
+    const cat = category.toLowerCase();
+    if (cat.includes('laptop') || cat.includes('computer')) return 'laptop_mac';
+    if (cat.includes('monitor') || cat.includes('display')) return 'desktop_windows';
+    if (cat.includes('phone') || cat.includes('mobile')) return 'phone_android';
+    if (cat.includes('chair') || cat.includes('furniture')) return 'chair';
+    if (cat.includes('desk')) return 'desk';
+    return 'inventory_2';
+}
+
+function searchAssets(query) {
+    const q = query.toLowerCase();
+    const rows = document.querySelectorAll('[id^="asset-item-"]');
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (q.length > 0) {
+        clearBtn.classList.remove('hidden');
+    } else {
+        clearBtn.classList.add('hidden');
+    }
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        // Also query data attributes just in case
+        const tag = (row.getAttribute('data-tag') || '').toLowerCase();
+        const serial = (row.getAttribute('data-serial') || '').toLowerCase();
+        
+        if (text.includes(q) || tag.includes(q) || serial.includes(q)) {
+            row.style.setProperty('display', 'grid', 'important');
+        } else {
+            row.style.setProperty('display', 'none', 'important');
+        }
+    });
+}
+
+function clearSearch() {
+    const input = document.getElementById('asset-search-input');
+    input.value = '';
+    searchAssets('');
+}
+
+function toggleFilters() {
+    const container = document.getElementById('filter-chips-container');
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        container.classList.add('flex');
+    } else {
+        container.classList.add('hidden');
+        container.classList.remove('flex');
+    }
+}
+
+let currentFilter = 'all';
+function setFilter(type) {
+    currentFilter = type;
+    const chips = ['all', 'available', 'allocated', 'pending'];
+    chips.forEach(c => {
+        const chip = document.getElementById(`filter-chip-${c}`);
+        if (c === type) {
+            chip.className = "px-md py-xs rounded-full bg-primary-container text-on-primary-container text-[11px] font-bold tracking-wider uppercase border border-primary/20";
+        } else {
+            chip.className = "px-md py-xs rounded-full bg-[#1F2126] text-on-surface-variant text-[11px] font-bold tracking-wider uppercase border border-[#2A2C33] hover:text-on-surface";
+        }
+    });
+
+    const rows = document.querySelectorAll('[id^="asset-item-"]');
+    rows.forEach(row => {
+        const status = row.getAttribute('data-status');
+        const hasPending = row.getAttribute('data-pending-transfer') === 'true';
+
+        let show = false;
+        if (type === 'all') {
+            show = true;
+        } else if (type === 'available') {
+            show = (status === 'AVAILABLE');
+        } else if (type === 'allocated') {
+            show = (status === 'ALLOCATED' && !hasPending);
+        } else if (type === 'pending') {
+            show = hasPending;
+        }
+
+        if (show) {
+            row.style.setProperty('display', 'grid', 'important');
+        } else {
+            row.style.setProperty('display', 'none', 'important');
+        }
+    });
+}
+
+function selectAsset(elementId, pk, tag, name, status, holder, location, serial, category, allocationId, hasPending, transferId, transferTo, transferBy, transferAt) {
+    // Remove active styles
+    document.querySelectorAll('[id^="asset-item-"]').forEach(item => {
+        item.classList.remove('bg-[#1F2126]', 'border-l-[3px]', 'border-l-primary-container');
+        item.classList.add('hover:bg-[#17181C]');
+    });
+
+    // Add active styling
+    const selectedItem = document.getElementById(elementId);
+    if (selectedItem) {
+        selectedItem.classList.add('bg-[#1F2126]', 'border-l-[3px]', 'border-l-primary-container');
+        selectedItem.classList.remove('hover:bg-[#17181C]');
+    }
+
+    // Toggle container panels
+    document.getElementById('no-asset-selected').classList.add('hidden');
+    document.getElementById('asset-detail-pane').classList.remove('hidden');
+
+    // Populate header info
+    document.getElementById('detail-asset-name').innerText = name;
+    document.getElementById('detail-asset-tag').innerText = `(${tag})`;
+    document.getElementById('detail-category-icon').innerText = getCategoryIcon(category);
+
+    // Reset visibility states
+    document.getElementById('banner-allocated').classList.add('hidden');
+    document.getElementById('banner-pending-transfer').classList.add('hidden');
+    document.getElementById('allocate-form').classList.add('hidden');
+    document.getElementById('transfer-form').classList.add('hidden');
+    document.getElementById('pending-actions').classList.add('hidden');
+    const returnSec = document.getElementById('return-section');
+    if (returnSec) returnSec.classList.add('hidden');
+
+    // State routing
+    if (hasPending === 'true') {
+        document.getElementById('banner-pending-transfer').classList.remove('hidden');
+        document.getElementById('detail-transfer-to').innerText = transferTo;
+        document.getElementById('detail-transfer-by').innerText = transferBy;
+        document.getElementById('detail-transfer-at').innerText = transferAt;
+
+        document.getElementById('pending-actions').classList.remove('hidden');
+        const rejectForm = document.getElementById('transfer-reject-form');
+        const approveForm = document.getElementById('transfer-approve-form');
+        if (rejectForm) rejectForm.action = `/transfers/${transferId}/reject/`;
+        if (approveForm) approveForm.action = `/transfers/${transferId}/approve/`;
+
+    } else if (status === 'AVAILABLE') {
+        const allocateForm = document.getElementById('allocate-form');
+        allocateForm.classList.remove('hidden');
+        allocateForm.action = `/assets/${pk}/allocate/`;
+
+    } else if (status === 'ALLOCATED') {
+        document.getElementById('banner-allocated').classList.remove('hidden');
+        document.getElementById('detail-holder-name').innerText = holder;
+
+        const transferForm = document.getElementById('transfer-form');
+        transferForm.classList.remove('hidden');
+        transferForm.action = `/assets/${pk}/transfer-request/`;
+
+        if (returnSec && allocationId) {
+            returnSec.classList.remove('hidden');
+            document.getElementById('return-form').action = `/allocations/${allocationId}/return/`;
+        }
+    }
+}
+
+function resetSelection() {
+    document.getElementById('no-asset-selected').classList.remove('hidden');
+    document.getElementById('asset-detail-pane').classList.add('hidden');
+    document.querySelectorAll('[id^="asset-item-"]').forEach(item => {
+        item.classList.remove('bg-[#1F2126]', 'border-l-[3px]', 'border-l-primary-container');
+        item.classList.add('hover:bg-[#17181C]');
+    });
+}
+
+function selectFirstAsset() {
+    const firstItem = document.querySelector('[id^="asset-item-"]');
+    if (firstItem) {
+        firstItem.click();
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Modify status pills to Pending Request where appropriate
+    document.querySelectorAll('[id^="asset-item-"]').forEach(item => {
+        const hasPending = item.getAttribute('data-pending-transfer') === 'true';
+        if (hasPending) {
+            const statusCell = item.querySelector('div:nth-child(3)');
+            if (statusCell) {
+                statusCell.innerHTML = `
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider text-[#F2B94D] bg-[#2B2212] border border-[#F2B94D]/15 uppercase">
+                        Pending Request
+                    </span>
+                `;
+            }
+        }
+    });
+
+    // Validations
+    const allocateFormEl = document.getElementById('allocate-form');
+    if (allocateFormEl) {
+        allocateFormEl.addEventListener('submit', function(e) {
+            const emp = this.querySelector('[name="employee"]').value;
+            const dept = this.querySelector('[name="department"]').value;
+            if (!emp && !dept) {
+                e.preventDefault();
+                alert('Please select an employee OR department to allocate.');
+            } else if (emp && dept) {
+                e.preventDefault();
+                alert('Cannot allocate to both employee and department. Choose one.');
+            }
+        });
+    }
+
+    const transferFormEl = document.getElementById('transfer-form');
+    if (transferFormEl) {
+        transferFormEl.addEventListener('submit', function(e) {
+            const emp = this.querySelector('[name="to_employee"]').value;
+            const dept = this.querySelector('[name="to_department"]').value;
+            if (!emp && !dept) {
+                e.preventDefault();
+                alert('Please select a destination employee OR department.');
+            } else if (emp && dept) {
+                e.preventDefault();
+                alert('Cannot transfer to both employee and department. Choose one.');
+            }
+        });
+    }
+
+    // Calculate metrics
+    let totalRequests = {{ transfers|length }};
+    let pendingCount = 0;
+    let activeCount = 0;
+    let overdueCount = 0;
+
+    document.querySelectorAll('[id^="asset-item-"]').forEach(item => {
+        const status = item.getAttribute('data-status');
+        const overdue = item.getAttribute('data-overdue') === 'true';
+        const pending = item.getAttribute('data-pending-transfer') === 'true';
+
+        if (status === 'ALLOCATED') {
+            activeCount++;
+            if (overdue) {
+                overdueCount++;
+            }
+        }
+        if (pending) {
+            pendingCount++;
+        }
+    });
+
+    document.getElementById('stat-total-requests').innerText = totalRequests;
+    document.getElementById('stat-pending-approvals').innerText = pendingCount;
+    document.getElementById('stat-active-allocations').innerText = activeCount;
+    document.getElementById('stat-overdue-allocations').innerText = overdueCount;
+
+    // Default select
+    selectFirstAsset();
+});
+</script>
+</body>
+</html>
