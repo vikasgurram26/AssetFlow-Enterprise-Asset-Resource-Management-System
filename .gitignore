@@ -4,3 +4,4 @@ db.sqlite3
 venv/
 .env
 *.egg-info/
+PROJECT_PRESENTATION_SCRIPT.txt
