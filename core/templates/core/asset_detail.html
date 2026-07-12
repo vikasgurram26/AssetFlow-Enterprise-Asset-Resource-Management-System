@@ -1,105 +1,552 @@
-{% extends "core/base.html" %}
+{% load static %}
 {% load core_extras %}
-{% block page_title %}{{ asset.asset_tag }} — {{ asset.name }}{% endblock %}
-{% block topbar_actions %}{% if can_manage %}<a href="{% url 'asset_edit' asset.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>{% endif %}{% endblock %}
-{% block content %}
-<div class="row g-4">
-  <div class="col-lg-7">
-    <div class="card-clean p-4 mb-4">
-      <div class="d-flex justify-content-between align-items-start mb-3">
-        <div>
-          <div class="text-muted small">{{ asset.category.name }} &middot; {{ asset.serial_number }}</div>
-          <div class="fs-4 fw-semibold">{{ asset.name }}</div>
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{ asset.asset_tag }} — {{ asset.name }} - AssetFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#141c27",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-primary": "#002780",
+                    "surface-container-lowest": "#070f19",
+                    "surface-bright": "#323a46",
+                    "surface-tint": "#b6c4ff",
+                    "on-surface": "#dbe3f3",
+                    "tertiary-container": "#bd8a20",
+                    "on-primary-container": "#002376",
+                    "secondary": "#51df9c",
+                    "tertiary-fixed": "#ffdea9",
+                    "outline-variant": "#444653",
+                    "on-primary-fixed": "#001550",
+                    "surface-container-highest": "#2d3541",
+                    "on-error": "#690005",
+                    "surface-container-high": "#222a36",
+                    "primary": "#b6c4ff",
+                    "on-secondary-container": "#003b24",
+                    "on-primary-fixed-variant": "#0d3bad",
+                    "on-tertiary-fixed": "#271900",
+                    "on-surface-variant": "#c4c5d5",
+                    "tertiary": "#f7bd51",
+                    "primary-container": "#6c8cff",
+                    "on-tertiary": "#422c00",
+                    "inverse-surface": "#dbe3f3",
+                    "error": "#ffb4ab",
+                    "primary-fixed": "#dce1ff",
+                    "on-secondary-fixed": "#002112",
+                    "surface-dim": "#0c141f",
+                    "on-background": "#dbe3f3",
+                    "on-tertiary-fixed-variant": "#5e4100",
+                    "surface-container": "#18202c",
+                    "surface-variant": "#2d3541",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#51df9c",
+                    "on-secondary-fixed-variant": "#005233",
+                    "inverse-primary": "#3255c6",
+                    "secondary-container": "#00b173",
+                    "outline": "#8e909f",
+                    "secondary-fixed": "#71fcb6",
+                    "on-secondary": "#003822",
+                    "surface": "#0c141f",
+                    "on-tertiary-container": "#3c2800",
+                    "inverse-on-surface": "#29313d",
+                    "tertiary-fixed-dim": "#f7bd51",
+                    "background": "#0c141f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "sm": "8px",
+                    "md": "12px",
+                    "lg": "16px",
+                    "xxl": "32px",
+                    "gutter": "16px",
+                    "margin-desktop": "32px",
+                    "xl": "24px",
+                    "xs": "4px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "body-base": [
+                            "Inter"
+                    ],
+                    "display-lg-mobile": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "mono-tabular": [
+                            "Inter"
+                    ],
+                    "body-bold": [
+                            "Inter"
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #0E0F12;
+            color: #dbe3f3;
+        }
+        
+        .status-pill-available {
+            color: #3ECF8E;
+            background-color: #122A22;
+            border: 1px solid rgba(62, 207, 142, 0.15);
+        }
+        .status-pill-pending {
+            color: #F2B94D;
+            background-color: #2B2212;
+            border: 1px solid rgba(242, 185, 77, 0.15);
+        }
+        .status-pill-danger {
+            color: #F0576B;
+            background-color: #2C1418;
+            border: 1px solid rgba(240, 87, 107, 0.15);
+        }
+
+        .data-table th {
+            background-color: #12141C;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #2A2C33;
+        }
+
+        .data-table tr {
+            height: 44px;
+            border-bottom: 1px solid #2A2C33;
+        }
+
+        .input-base, .form-control, .form-select {
+            background-color: #0E0F12 !important;
+            border: 1px solid #2A2C33 !important;
+            color: #dbe3f3 !important;
+            border-radius: 0.25rem !important;
+            height: 38px !important;
+            font-size: 13px !important;
+            width: 100% !important;
+        }
+        
+        .input-base:focus, .form-control:focus, .form-select:focus {
+            border-color: #6C8CFF !important;
+            box-shadow: 0 0 2px 0 rgba(108, 140, 255, 0.15) !important;
+            outline: none !important;
+        }
+        
+        textarea.form-control {
+            height: auto !important;
+        }
+        
+        .surface-container {
+            background-color: #17181C;
+            border: 1px solid #2A2C33;
+        }
+        
+        .accent-highlight {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #2D3541;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #444653;
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base h-screen overflow-hidden flex bg-background antialiased">
+
+<!-- SideNavBar -->
+<aside class="w-[220px] bg-[#12141C] border-r border-[#2A2C33] flex flex-col h-screen fixed left-0 top-0 z-30">
+    <!-- Brand -->
+    <div class="h-[56px] px-xl flex items-center border-b border-[#2A2C33]">
+        <span class="material-symbols-outlined text-primary mr-sm text-[24px]">grid_view</span>
+        <span class="font-bold text-[15px] tracking-tight text-on-surface">AssetFlow</span>
+    </div>
+    <!-- Nav Items -->
+    <div class="flex-1 py-lg space-y-[2px] px-md overflow-y-auto custom-scroll">
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            <span class="text-[13px] font-medium">Dashboard</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[20px]">domain</span>
+            <span class="text-[13px] font-medium">Organization</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface bg-[#1F2126] border-l-[3px] border-l-primary-container transition-colors gap-md" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[20px] text-primary">inventory_2</span>
+            <span class="text-[13px] font-semibold">Assets</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[20px]">sync_alt</span>
+            <span class="text-[13px] font-medium">Allocation</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+            <span class="text-[13px] font-medium">Booking</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'maintenance_list' %}">
+            <span class="material-symbols-outlined text-[20px]">build</span>
+            <span class="text-[13px] font-medium">Maintenance</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[20px]">fact_check</span>
+            <span class="text-[13px] font-medium">Audit</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined text-[20px]">analytics</span>
+            <span class="text-[13px] font-medium">Reports</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="text-[13px] font-medium">Notifications</span>
+        </a>
+    </div>
+    <!-- Footer Profile -->
+    <div class="p-lg border-t border-[#2A2C33] flex flex-col gap-md">
+        {% if can_manage %}
+        <a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-[12px] h-[36px] rounded flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Register Asset
+        </a>
+        {% endif %}
+        
+        <div class="flex items-center gap-md pt-xs">
+            <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold text-xs">
+                {{ request.user.username|slice:":2"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="text-[11px] text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="text-on-surface-variant hover:text-error transition-colors p-1 flex items-center bg-transparent border-0 cursor-pointer" title="Sign Out">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
         </div>
-        <span class="pill {{ asset.status|status_pill }} fs-6">{{ asset.get_status_display }}</span>
-      </div>
-      <table class="table table-sm">
-        <tr><th class="text-muted" style="width:180px">Location</th><td>{{ asset.location|default:"—" }}</td></tr>
-        <tr><th class="text-muted">Department</th><td>{{ asset.department|default:"—" }}</td></tr>
-        <tr><th class="text-muted">Condition</th><td>{{ asset.condition }}</td></tr>
-        <tr><th class="text-muted">Acquisition</th><td>{{ asset.acquisition_date }} — {{ asset.acquisition_cost }}</td></tr>
-        <tr><th class="text-muted">Bookable resource</th><td>{% if asset.is_bookable %}Yes{% else %}No{% endif %}</td></tr>
-        <tr><th class="text-muted">Currently held by</th>
-          <td>
-            {% if current_allocation %}
-              {{ current_allocation.employee|default:current_allocation.department }}
-              {% if current_allocation.expected_return_date %} — due {{ current_allocation.expected_return_date }}{% if asset.is_overdue %} <span class="pill pill-danger">Overdue</span>{% endif %}{% endif %}
-            {% else %}—{% endif %}
-          </td>
-        </tr>
-      </table>
+    </div>
+</aside>
+
+<!-- TopNavBar -->
+<header class="h-[56px] fixed top-0 right-0 left-[220px] z-20 bg-[#12141C] border-b border-[#2A2C33] flex items-center justify-between px-xl w-auto">
+    <div class="flex items-center gap-md flex-1">
+        <a href="{% url 'asset_list' %}" class="text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span class="text-xs font-semibold">Back to Directory</span>
+        </a>
+        <div class="w-[1px] h-[16px] bg-[#2A2C33] mx-sm"></div>
+        <h1 class="text-[14px] font-bold text-on-surface">{{ asset.asset_tag }} — {{ asset.name }}</h1>
+    </div>
+    <div class="flex items-center gap-lg">
+        {% if can_manage %}
+        <a href="{% url 'asset_edit' asset.pk %}" class="bg-transparent border border-[#2A2C33] hover:border-primary text-on-surface hover:text-primary transition-colors px-3 py-1 rounded text-xs flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[14px]">edit</span>
+            Edit Asset
+        </a>
+        {% endif %}
+    </div>
+</header>
+
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-[220px] mt-[56px] flex flex-col h-[calc(100vh-56px)] bg-[#0E0F12] relative overflow-hidden">
+    
+    <!-- Detail Sub-Header -->
+    <div class="px-xl py-lg flex items-center justify-between shrink-0 bg-[#12141C] border-b border-[#2A2C33]">
+        <div class="flex items-center gap-lg">
+            <div>
+                <span class="text-xs font-semibold text-primary font-mono-tabular">{{ asset.category.name }} &middot; {{ asset.serial_number }}</span>
+                <h2 class="font-display-lg text-[20px] font-bold text-on-surface mt-0.5">{{ asset.name }}</h2>
+            </div>
+            {% if asset.status == 'AVAILABLE' %}
+            <span class="inline-block px-3 py-1 rounded status-pill-available text-[11px] font-bold uppercase tracking-wider">Available</span>
+            {% elif asset.status == 'ALLOCATED' %}
+            <span class="inline-block px-3 py-1 rounded status-pill-danger text-[11px] font-bold uppercase tracking-wider">Allocated</span>
+            {% else %}
+            <span class="inline-block px-3 py-1 rounded status-pill-pending text-[11px] font-bold uppercase tracking-wider">{{ asset.get_status_display }}</span>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="card-clean p-4 mb-4">
-      <div class="section-head"><h2>Allocation history</h2></div>
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Holder</th><th>Allocated</th><th>Returned</th><th>Status</th></tr></thead>
-        <tbody>
-          {% for a in allocations %}
-          <tr>
-            <td>{{ a.employee|default:a.department }}</td><td>{{ a.allocated_date|date:"M d, Y" }}</td>
-            <td>{{ a.returned_date|date:"M d, Y"|default:"—" }}</td>
-            <td><span class="pill {{ a.status|status_pill }}">{{ a.get_status_display }}</span></td>
-          </tr>
-          {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">Never allocated.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card-clean p-4">
-      <div class="section-head"><h2>Maintenance history</h2></div>
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Issue</th><th>Raised by</th><th>Status</th></tr></thead>
-        <tbody>
-          {% for m in maintenance_requests %}
-          <tr><td>{{ m.issue_description|truncatechars:50 }}</td><td>{{ m.raised_by }}</td>
-            <td><span class="pill {{ m.status|status_pill }}">{{ m.get_status_display }}</span></td></tr>
-          {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">No maintenance history.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="col-lg-5">
-    {% if asset.status == "AVAILABLE" and can_manage %}
-    <div class="card-clean p-4 mb-3">
-      <h2 class="fs-6 fw-semibold mb-3">Allocate</h2>
-      <form method="post" action="{% url 'asset_allocate' asset.pk %}">
-        {% csrf_token %}
-        {% for field in allocate_form %}
-          <div class="mb-2"><label class="form-label small">{{ field.label }}</label>{{ field }}</div>
+    <!-- Django Messages inside Main Layout -->
+    {% if messages %}
+    <div class="px-xl pt-lg shrink-0 space-y-xs">
+        {% for message in messages %}
+        <div class="p-md rounded border {% if message.tags == 'error' %}border-error/30 bg-error-container/10 text-error{% else %}border-secondary/30 bg-secondary-container/10 text-secondary{% endif %} flex items-center justify-between text-[13px]">
+            <div class="flex items-center gap-md">
+                <span class="material-symbols-outlined text-[18px]">
+                    {% if message.tags == 'error' %}error{% else %}check_circle{% endif %}
+                </span>
+                <p class="font-body-bold">{{ message }}</p>
+            </div>
+        </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary w-100">Allocate</button>
-      </form>
     </div>
     {% endif %}
 
-    {% if asset.status == "ALLOCATED" %}
-    <div class="card-clean p-4 mb-3">
-      <h2 class="fs-6 fw-semibold mb-3">Currently allocated</h2>
-      <p class="text-muted small">Held by {{ current_allocation.employee|default:current_allocation.department }}. To give this to someone else, request a transfer — direct allocation is blocked while it's held.</p>
-      {% if can_manage %}
-      <form method="post" action="{% url 'allocation_return' current_allocation.pk %}">
-        {% csrf_token %}
-        <label class="form-label small">Condition notes (optional)</label>
-        <textarea name="condition_notes" class="form-control form-control-sm mb-2" rows="2"></textarea>
-        <button type="submit" class="btn btn-primary w-100">Mark returned</button>
-      </form>
-      {% endif %}
-    </div>
-    {% endif %}
+    <!-- Split-Pane Workspace -->
+    <div class="flex-1 px-xl py-lg overflow-y-auto custom-scroll flex gap-lg bg-[#0E0F12]">
+        
+        <!-- Left Column: Metadata & History (60%) -->
+        <div class="flex-[3] flex flex-col gap-lg min-w-0">
+            
+            <!-- Asset Metadata Grid Card -->
+            <div class="surface-container accent-highlight rounded-lg p-xl">
+                <h3 class="text-on-surface text-[14px] font-bold border-b border-[#2A2C33] pb-sm mb-md flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-primary">analytics</span>
+                    Asset Specifications
+                </h3>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-y-lg gap-x-md text-[13px]">
+                    <div>
+                        <p class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Location</p>
+                        <p class="text-on-surface font-semibold">{{ asset.location|default:"—" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Department</p>
+                        <p class="text-on-surface font-semibold">{{ asset.department|default:"—" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Condition</p>
+                        <p class="text-on-surface font-semibold">{{ asset.condition }}</p>
+                    </div>
+                    <div>
+                        <p class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Acquisition Date</p>
+                        <p class="text-on-surface font-mono-tabular font-semibold">{{ asset.acquisition_date }}</p>
+                    </div>
+                    <div>
+                        <p class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Acquisition Cost</p>
+                        <p class="text-on-surface font-semibold">{{ asset.acquisition_cost }}</p>
+                    </div>
+                    <div>
+                        <p class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Bookable Resource</p>
+                        <p class="text-on-surface font-semibold">{% if asset.is_bookable %}Yes{% else %}No{% endif %}</p>
+                    </div>
+                    <div class="col-span-full border-t border-[#2A2C33] pt-md mt-sm">
+                        <p class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Currently Held By</p>
+                        <p class="text-on-surface text-[14px] font-bold">
+                            {% if current_allocation %}
+                                <span class="text-primary">{{ current_allocation.employee|default:current_allocation.department }}</span>
+                                {% if current_allocation.expected_return_date %}
+                                    <span class="text-xs text-on-surface-variant font-normal"> (Due {{ current_allocation.expected_return_date|date:"M d, Y" }})</span>
+                                    {% if asset.is_overdue %}
+                                        <span class="ml-2 inline-block px-2 py-0.5 rounded status-pill-danger text-[9px] font-bold uppercase tracking-wider">Overdue</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% else %}
+                                <span class="italic text-on-surface-variant font-normal">Unassigned / Available in storage</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-    <div class="card-clean p-4">
-      <h2 class="fs-6 fw-semibold mb-3">Request transfer</h2>
-      <p class="text-muted small">Goes to an Asset Manager or Department Head for approval.</p>
-      <form method="post" action="{% url 'transfer_request_create' asset.pk %}">
-        {% csrf_token %}
-        {% for field in transfer_form %}
-          <div class="mb-2"><label class="form-label small">{{ field.label }}</label>{{ field }}</div>
-        {% endfor %}
-        <button type="submit" class="btn btn-outline-secondary w-100">Request transfer</button>
-      </form>
+            <!-- Allocation History Card -->
+            <div class="surface-container accent-highlight rounded-lg p-xl flex flex-col overflow-hidden">
+                <h3 class="text-on-surface text-[14px] font-bold border-b border-[#2A2C33] pb-sm mb-md flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-primary">history</span>
+                    Allocation History
+                </h3>
+                <div class="overflow-x-auto custom-scroll">
+                    <table class="w-full text-left border-collapse data-table whitespace-nowrap">
+                        <thead>
+                            <tr>
+                                <th class="px-md py-sm">Holder</th>
+                                <th class="px-md py-sm">Allocated</th>
+                                <th class="px-md py-sm">Returned</th>
+                                <th class="px-md py-sm">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-on-surface divide-y divide-[#2A2C33]">
+                            {% for a in allocations %}
+                            <tr class="row-hover">
+                                <td class="px-md font-body-bold text-[13px] text-on-surface">{{ a.employee|default:a.department }}</td>
+                                <td class="px-md text-on-surface-variant font-mono-tabular">{{ a.allocated_date|date:"M d, Y" }}</td>
+                                <td class="px-md text-on-surface-variant font-mono-tabular">{{ a.returned_date|date:"M d, Y"|default:"—" }}</td>
+                                <td class="px-md">
+                                    {% if a.status == 'RETURNED' %}
+                                    <span class="inline-block px-2 py-0.5 rounded status-pill-available text-[10px] font-bold uppercase tracking-wider">Returned</span>
+                                    {% else %}
+                                    <span class="inline-block px-2 py-0.5 rounded status-pill-danger text-[10px] font-bold uppercase tracking-wider">{{ a.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-on-surface-variant py-6 bg-[#17181C]">
+                                    <p class="text-sm italic">Never allocated.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Maintenance History Card -->
+            <div class="surface-container accent-highlight rounded-lg p-xl flex flex-col overflow-hidden">
+                <h3 class="text-on-surface text-[14px] font-bold border-b border-[#2A2C33] pb-sm mb-md flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-primary">build</span>
+                    Maintenance History
+                </h3>
+                <div class="overflow-x-auto custom-scroll">
+                    <table class="w-full text-left border-collapse data-table whitespace-nowrap">
+                        <thead>
+                            <tr>
+                                <th class="px-md py-sm">Issue Description</th>
+                                <th class="px-md py-sm">Raised By</th>
+                                <th class="px-md py-sm">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-on-surface divide-y divide-[#2A2C33]">
+                            {% for m in maintenance_requests %}
+                            <tr class="row-hover">
+                                <td class="px-md font-body-bold text-[13px] text-on-surface truncate max-w-[300px]">{{ m.issue_description|truncatechars:50 }}</td>
+                                <td class="px-md text-on-surface-variant">{{ m.raised_by }}</td>
+                                <td class="px-md">
+                                    {% if m.status == 'RESOLVED' %}
+                                    <span class="inline-block px-2 py-0.5 rounded status-pill-available text-[10px] font-bold uppercase tracking-wider">Resolved</span>
+                                    {% elif m.status == 'PENDING' %}
+                                    <span class="inline-block px-2 py-0.5 rounded status-pill-pending text-[10px] font-bold uppercase tracking-wider">Pending</span>
+                                    {% else %}
+                                    <span class="inline-block px-2 py-0.5 rounded status-pill-danger text-[10px] font-bold uppercase tracking-wider">{{ m.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-on-surface-variant py-6 bg-[#17181C]">
+                                    <p class="text-sm italic">No maintenance history.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Contextual Action Forms (40%) -->
+        <div class="flex-[2] flex flex-col gap-lg min-w-[300px] max-w-[450px]">
+            
+            <!-- Direct Allocation Form (If AVAILABLE) -->
+            {% if asset.status == "AVAILABLE" and can_manage %}
+            <div class="surface-container accent-highlight rounded-lg p-xl">
+                <h3 class="text-on-surface text-[14px] font-bold border-b border-[#2A2C33] pb-sm mb-md flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-primary">assignment_ind</span>
+                    Direct Allocation
+                </h3>
+                <form method="post" action="{% url 'asset_allocate' asset.pk %}" class="space-y-md">
+                    {% csrf_token %}
+                    {% for field in allocate_form %}
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-xs">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="text-error text-xs mt-1">{{ field.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="w-full bg-[#6C8CFF] text-[#0E0F12] hover:bg-[#5a7bed] transition-colors h-[38px] rounded font-body-bold text-[13px] flex items-center justify-center gap-sm mt-lg shadow-[0_4px_12px_rgba(108,140,255,0.15)]">
+                        <span class="material-symbols-outlined text-[18px]">check</span>
+                        Allocate Asset
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Currently Allocated & Return Form (If ALLOCATED) -->
+            {% if asset.status == "ALLOCATED" %}
+            <div class="surface-container accent-highlight rounded-lg p-xl">
+                <h3 class="text-on-surface text-[14px] font-bold border-b border-[#2A2C33] pb-sm mb-md flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-primary">assignment_returned</span>
+                    Release &amp; Return
+                </h3>
+                <div class="p-md rounded bg-[#0E0F12] border border-[#2A2C33] text-[13px] text-on-surface-variant mb-md">
+                    <p class="mb-2">Currently held by <strong class="text-on-surface">{{ current_allocation.employee|default:current_allocation.department }}</strong>.</p>
+                    <p class="text-xs opacity-70">Direct allocation is blocked while the asset is active. You must register a return or process a transfer request to change holders.</p>
+                </div>
+                
+                {% if can_manage %}
+                <form method="post" action="{% url 'allocation_return' current_allocation.pk %}" class="space-y-md">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Condition Notes (Optional)</label>
+                        <textarea name="condition_notes" rows="2" class="form-control" placeholder="Describe the physical/functional state of the asset..."></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-error-container/20 border border-error/30 text-error hover:bg-error-container/30 hover:border-error transition-colors h-[38px] rounded font-body-bold text-[13px] flex items-center justify-center gap-sm">
+                        <span class="material-symbols-outlined text-[18px]">keyboard_return</span>
+                        Mark Returned
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Request Transfer Form (Always Available) -->
+            <div class="surface-container accent-highlight rounded-lg p-xl">
+                <h3 class="text-on-surface text-[14px] font-bold border-b border-[#2A2C33] pb-sm mb-md flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-primary">swap_horiz</span>
+                    Request Transfer
+                </h3>
+                <p class="text-[12px] text-on-surface-variant mb-md">Creates a transfer request that goes to a Department Head or Asset Manager for authorization.</p>
+                <form method="post" action="{% url 'transfer_request_create' asset.pk %}" class="space-y-md">
+                    {% csrf_token %}
+                    {% for field in transfer_form %}
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-xs">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="text-error text-xs mt-1">{{ field.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="w-full bg-[#1F2126] border border-[#2A2C33] text-on-surface hover:bg-[#2D3541] hover:border-primary transition-colors h-[38px] rounded font-body-bold text-[13px] flex items-center justify-center gap-sm mt-lg">
+                        <span class="material-symbols-outlined text-[18px]">arrow_right_alt</span>
+                        Request Transfer
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
-{% endblock %}
+</main>
+
+</body>
+</html>

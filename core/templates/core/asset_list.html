@@ -1,35 +1,672 @@
-{% extends "core/base.html" %}
+{% load static %}
 {% load core_extras %}
-{% block page_title %}Assets{% endblock %}
-{% block topbar_actions %}
-  {% if can_manage %}<a href="{% url 'asset_create' %}" class="btn btn-primary btn-sm">Register asset</a>{% endif %}
-{% endblock %}
-{% block content %}
-<form method="get" class="d-flex gap-2 mb-3">
-  <input type="text" name="q" placeholder="Search tag, serial, or name" class="form-control form-control-sm" style="width:240px" value="{{ request.GET.q }}">
-  <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-    <option value="">All statuses</option>
-    {% for value, label in statuses %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-  </select>
-  <select name="category" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-    <option value="">All categories</option>
-    {% for c in categories %}<option value="{{ c.pk }}" {% if request.GET.category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
-  </select>
-  <button class="btn btn-sm btn-outline-secondary">Search</button>
-</form>
-<div class="card-clean">
-  <table class="data w-100 mb-0">
-    <thead><tr><th>Tag</th><th>Name</th><th>Category</th><th>Status</th><th>Department</th><th>Location</th><th>Bookable</th></tr></thead>
-    <tbody>
-      {% for a in assets %}
-      <tr onclick="window.location='{% url 'asset_detail' a.pk %}'" style="cursor:pointer">
-        <td>{{ a.asset_tag }}</td><td>{{ a.name }}</td><td>{{ a.category.name }}</td>
-        <td><span class="pill {{ a.status|status_pill }}">{{ a.get_status_display }}</span>{% if a.is_overdue %} <span class="pill pill-danger">Overdue</span>{% endif %}</td>
-        <td>{{ a.department|default:"—" }}</td><td>{{ a.location|default:"—" }}</td>
-        <td>{% if a.is_bookable %}Yes{% else %}—{% endif %}</td>
-      </tr>
-      {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">No assets registered yet.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asset Registration &amp; Directory - AssetFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#141c27",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-primary": "#002780",
+                    "surface-container-lowest": "#070f19",
+                    "surface-bright": "#323a46",
+                    "surface-tint": "#b6c4ff",
+                    "on-surface": "#dbe3f3",
+                    "tertiary-container": "#bd8a20",
+                    "on-primary-container": "#002376",
+                    "secondary": "#51df9c",
+                    "tertiary-fixed": "#ffdea9",
+                    "outline-variant": "#444653",
+                    "on-primary-fixed": "#001550",
+                    "surface-container-highest": "#2d3541",
+                    "on-error": "#690005",
+                    "surface-container-high": "#222a36",
+                    "primary": "#b6c4ff",
+                    "on-secondary-container": "#003b24",
+                    "on-primary-fixed-variant": "#0d3bad",
+                    "on-tertiary-fixed": "#271900",
+                    "on-surface-variant": "#c4c5d5",
+                    "tertiary": "#f7bd51",
+                    "primary-container": "#6c8cff",
+                    "on-tertiary": "#422c00",
+                    "inverse-surface": "#dbe3f3",
+                    "error": "#ffb4ab",
+                    "primary-fixed": "#dce1ff",
+                    "on-secondary-fixed": "#002112",
+                    "surface-dim": "#0c141f",
+                    "on-background": "#dbe3f3",
+                    "on-tertiary-fixed-variant": "#5e4100",
+                    "surface-container": "#18202c",
+                    "surface-variant": "#2d3541",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#51df9c",
+                    "on-secondary-fixed-variant": "#005233",
+                    "inverse-primary": "#3255c6",
+                    "secondary-container": "#00b173",
+                    "outline": "#8e909f",
+                    "secondary-fixed": "#71fcb6",
+                    "on-secondary": "#003822",
+                    "surface": "#0c141f",
+                    "on-tertiary-container": "#3c2800",
+                    "inverse-on-surface": "#29313d",
+                    "tertiary-fixed-dim": "#f7bd51",
+                    "background": "#0c141f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "sm": "8px",
+                    "md": "12px",
+                    "lg": "16px",
+                    "xxl": "32px",
+                    "gutter": "16px",
+                    "margin-desktop": "32px",
+                    "xl": "24px",
+                    "xs": "4px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "body-base": [
+                            "Inter"
+                    ],
+                    "display-lg-mobile": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "mono-tabular": [
+                            "Inter"
+                    ],
+                    "body-bold": [
+                            "Inter"
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #0E0F12;
+            color: #dbe3f3;
+        }
+        
+        .status-pill-available {
+            color: #3ECF8E;
+            background-color: #122A22;
+            border: 1px solid rgba(62, 207, 142, 0.15);
+        }
+        .status-pill-pending {
+            color: #F2B94D;
+            background-color: #2B2212;
+            border: 1px solid rgba(242, 185, 77, 0.15);
+        }
+        .status-pill-danger {
+            color: #F0576B;
+            background-color: #2C1418;
+            border: 1px solid rgba(240, 87, 107, 0.15);
+        }
+
+        .data-table th {
+            background-color: #12141C;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #2A2C33;
+        }
+
+        .data-table tr {
+            height: 48px;
+            border-bottom: 1px solid #2A2C33;
+        }
+
+        .row-hover:hover {
+            background-color: #1F2126;
+        }
+        
+        .row-selected {
+            background-color: rgba(108, 140, 255, 0.1) !important;
+            border-left: 2px solid #6C8CFF;
+        }
+
+        .input-base {
+            background-color: #0E0F12;
+            border: 1px solid #2A2C33;
+            color: #dbe3f3;
+        }
+        
+        .input-base:focus {
+            border-color: #6C8CFF;
+            box-shadow: 0 0 2px 0 rgba(108, 140, 255, 0.15);
+            outline: none;
+        }
+        
+        .surface-container {
+            background-color: #17181C;
+            border: 1px solid #2A2C33;
+        }
+        
+        .accent-highlight {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Custom scrollbar for high-density table */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #2D3541;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #444653;
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base h-screen overflow-hidden flex bg-background antialiased">
+
+<!-- SideNavBar -->
+<aside class="w-[220px] bg-[#12141C] border-r border-[#2A2C33] flex flex-col h-screen fixed left-0 top-0 z-30">
+    <!-- Brand -->
+    <div class="h-[56px] px-xl flex items-center border-b border-[#2A2C33]">
+        <span class="material-symbols-outlined text-primary mr-sm text-[24px]">grid_view</span>
+        <span class="font-bold text-[15px] tracking-tight text-on-surface">AssetFlow</span>
+    </div>
+    <!-- Nav Items -->
+    <div class="flex-1 py-lg space-y-[2px] px-md overflow-y-auto custom-scroll">
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            <span class="text-[13px] font-medium">Dashboard</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[20px]">domain</span>
+            <span class="text-[13px] font-medium">Organization</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface bg-[#1F2126] border-l-[3px] border-l-primary-container transition-colors gap-md" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[20px] text-primary">inventory_2</span>
+            <span class="text-[13px] font-semibold">Assets</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[20px]">sync_alt</span>
+            <span class="text-[13px] font-medium">Allocation</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+            <span class="text-[13px] font-medium">Booking</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'maintenance_list' %}">
+            <span class="material-symbols-outlined text-[20px]">build</span>
+            <span class="text-[13px] font-medium">Maintenance</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[20px]">fact_check</span>
+            <span class="text-[13px] font-medium">Audit</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined text-[20px]">analytics</span>
+            <span class="text-[13px] font-medium">Reports</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="text-[13px] font-medium">Notifications</span>
+        </a>
+    </div>
+    <!-- Footer Profile -->
+    <div class="p-lg border-t border-[#2A2C33] flex flex-col gap-md">
+        {% if can_manage %}
+        <a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-[12px] h-[36px] rounded flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Register Asset
+        </a>
+        {% endif %}
+        
+        <div class="flex items-center gap-md pt-xs">
+            <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold text-xs">
+                {{ request.user.username|slice:":2"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="text-[11px] text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="text-on-surface-variant hover:text-error transition-colors p-1 flex items-center bg-transparent border-0 cursor-pointer" title="Sign Out">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<!-- TopNavBar -->
+<header class="h-[56px] fixed top-0 right-0 left-[220px] z-20 bg-[#12141C] border-b border-[#2A2C33] flex items-center justify-between px-xl w-auto">
+    <div class="flex items-center gap-md flex-1">
+        <h1 class="text-[16px] font-bold text-on-surface">Asset Directory &amp; Registry</h1>
+    </div>
+    <div class="flex items-center gap-lg">
+        <div class="flex items-center gap-md">
+            <span class="text-on-surface-variant text-[12px]">System Online</span>
+            <div class="w-[1px] h-[16px] bg-[#2A2C33]"></div>
+            <button class="relative text-on-surface-variant hover:text-on-surface transition-colors flex items-center">
+                <span class="material-symbols-outlined text-[20px]">notifications</span>
+                {% if unread_notification_count %}
+                <span class="absolute -top-1 -right-1 w-[8px] h-[8px] bg-error rounded-full"></span>
+                {% endif %}
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-[220px] mt-[56px] flex flex-col h-[calc(100vh-56px)] bg-[#0E0F12] relative overflow-hidden">
+    
+    <!-- Page Header -->
+    <div class="px-xl py-lg flex items-center justify-between shrink-0 bg-[#12141C] border-b border-[#2A2C33]">
+        <div>
+            <h2 class="font-display-lg text-[20px] font-bold text-on-surface">Asset Directory</h2>
+            <p class="text-on-surface-variant text-[13px] mt-1">Manage and track all organizational resources.</p>
+        </div>
+        <div>
+            {% if can_manage %}
+            <a href="{% url 'asset_create' %}" class="bg-[#6C8CFF] text-[#0E0F12] px-4 h-[36px] rounded font-body-bold hover:bg-[#5a7bed] transition-colors flex items-center gap-sm shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Register Asset
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Django Messages inside Main Layout -->
+    {% if messages %}
+    <div class="px-xl pt-lg shrink-0 space-y-xs bg-[#0E0F12]">
+        {% for message in messages %}
+        <div class="p-md rounded border {% if message.tags == 'error' %}border-error/30 bg-error-container/10 text-error{% else %}border-secondary/30 bg-secondary-container/10 text-secondary{% endif %} flex items-center justify-between text-[13px]">
+            <div class="flex items-center gap-md">
+                <span class="material-symbols-outlined text-[18px]">
+                    {% if message.tags == 'error' %}error{% else %}check_circle{% endif %}
+                </span>
+                <p class="font-body-bold">{{ message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Filter Bar -->
+    <form method="get" class="px-xl py-md shrink-0 flex items-center gap-sm flex-wrap bg-[#0E0F12] border-b border-[#2A2C33]">
+        <!-- Search Input -->
+        <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">filter_alt</span>
+            <input name="q" value="{{ request.GET.q|default:'' }}" class="input-base rounded h-[36px] pl-9 pr-3 text-sm w-64 text-on-surface placeholder-on-surface-variant/50" placeholder="Filter by Tag, Name, or Serial..." type="text"/>
+        </div>
+        
+        <!-- Category Dropdown -->
+        <select name="category" onchange="this.form.submit()" class="input-base rounded h-[36px] px-3 py-0 text-sm text-on-surface-variant/80 appearance-none min-w-[140px]">
+            <option value="">Category</option>
+            {% for c in categories %}
+            <option value="{{ c.pk }}" {% if request.GET.category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        
+        <!-- Status Dropdown -->
+        <select name="status" onchange="this.form.submit()" class="input-base rounded h-[36px] px-3 py-0 text-sm text-on-surface-variant/80 appearance-none min-w-[140px]">
+            <option value="">Status</option>
+            {% for value, label in statuses %}
+            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        
+        <!-- Department Dropdown (JS Client-Side Filter) -->
+        <select id="js-filter-department" onchange="applyJSFilters()" class="input-base rounded h-[36px] px-3 py-0 text-sm text-on-surface-variant/80 appearance-none min-w-[140px]">
+            <option value="">Department</option>
+        </select>
+        
+        <!-- Location Dropdown (JS Client-Side Filter) -->
+        <select id="js-filter-location" onchange="applyJSFilters()" class="input-base rounded h-[36px] px-3 py-0 text-sm text-on-surface-variant/80 appearance-none min-w-[140px]">
+            <option value="">Location</option>
+        </select>
+
+        {% if request.GET.q or request.GET.category or request.GET.status %}
+        <a href="{% url 'asset_list' %}" class="h-[36px] px-lg rounded bg-transparent border border-[#2A2C33] text-on-surface-variant hover:text-on-surface transition-colors text-[13px] flex items-center justify-center">
+            Clear
+        </a>
+        {% endif %}
+    </form>
+
+    <!-- Main Data Area (Bento-style wrapping the table) -->
+    <div class="flex-1 px-xl py-lg overflow-hidden flex gap-md bg-[#0E0F12]">
+        
+        <!-- Table Container -->
+        <div class="flex-1 surface-container accent-highlight rounded-lg flex flex-col overflow-hidden relative">
+            
+            <!-- Table Wrapper for Scroll -->
+            <div class="overflow-auto flex-1 custom-scroll">
+                <table class="w-full text-left border-collapse data-table whitespace-nowrap">
+                    <thead class="sticky top-0 z-10 shadow-[0_1px_0_0_#2A2C33]">
+                        <tr>
+                            <th class="px-md py-sm w-12 text-center">
+                                <input id="select-all-checkbox" onchange="toggleSelectAll(this)" class="rounded bg-[#0E0F12] border-[#2A2C33] text-primary focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-transparent w-4 h-4 cursor-pointer" type="checkbox"/>
+                            </th>
+                            <th class="px-md py-sm">Asset Tag</th>
+                            <th class="px-md py-sm">Name</th>
+                            <th class="px-md py-sm">Serial No.</th>
+                            <th class="px-md py-sm">Category</th>
+                            <th class="px-md py-sm">Status</th>
+                            <th class="px-md py-sm">Current Holder</th>
+                            <th class="px-md py-sm text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-on-surface divide-y divide-[#2A2C33]">
+                        {% for a in assets %}
+                        <tr class="row-hover asset-row" id="asset-row-{{ a.pk }}"
+                            data-department="{{ a.department.name|default:'—' }}"
+                            data-location="{{ a.location|default:'—' }}"
+                            onclick="selectAsset('asset-row-{{ a.pk }}', '{{ a.pk }}', '{{ a.asset_tag|escapejs }}', '{{ a.name|escapejs }}', '{{ a.serial_number|escapejs }}', '{{ a.category.name|escapejs }}', '{{ a.status|escapejs }}', '{{ a.get_status_display|escapejs }}', '{{ a.location|default:'—'|escapejs }}', '{% if a.current_allocation %}{% if a.current_allocation.employee %}{{ a.current_allocation.employee.get_full_name|default:a.current_allocation.employee.username|escapejs }}{% else %}{{ a.current_allocation.department.name|escapejs }}{% endif %}{% else %}Unassigned{% endif %}', '{{ a.acquisition_date|date:'Y-m-d'|escapejs }}', '{{ a.condition|escapejs }}', '{{ a.is_bookable|yesno:'Yes,No'|escapejs }}', '{% url 'asset_detail' a.pk %}')"
+                            style="cursor:pointer">
+                            
+                            <td class="px-md text-center" onclick="event.stopPropagation();">
+                                <input class="row-checkbox rounded bg-[#0E0F12] border-[#2A2C33] text-primary focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-transparent w-4 h-4 cursor-pointer" type="checkbox"/>
+                            </td>
+                            <td class="px-md text-primary font-mono-tabular font-semibold">{{ a.asset_tag }}</td>
+                            <td class="px-md font-body-bold text-[13px] text-on-surface truncate max-w-[200px]">{{ a.name }}</td>
+                            <td class="px-md text-on-surface-variant font-mono-tabular truncate max-w-[120px]">{{ a.serial_number }}</td>
+                            <td class="px-md text-on-surface-variant">{{ a.category.name }}</td>
+                            <td class="px-md">
+                                {% if a.status == 'AVAILABLE' %}
+                                <span class="inline-block px-2 py-0.5 rounded status-pill-available text-[11px] font-bold uppercase tracking-wider">Available</span>
+                                {% elif a.status == 'ALLOCATED' %}
+                                <span class="inline-block px-2 py-0.5 rounded status-pill-danger text-[11px] font-bold uppercase tracking-wider">Allocated</span>
+                                {% else %}
+                                <span class="inline-block px-2 py-0.5 rounded status-pill-pending text-[11px] font-bold uppercase tracking-wider">{{ a.get_status_display }}</span>
+                                {% endif %}
+                                {% if a.is_overdue %}
+                                <span class="inline-block px-2 py-0.5 rounded status-pill-danger text-[11px] font-bold uppercase tracking-wider ml-1">Overdue</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-md flex items-center gap-sm h-[48px]">
+                                {% if a.current_allocation %}
+                                <div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high border border-[#2A2C33] flex items-center justify-center text-[10px] font-bold text-on-surface">
+                                    {% if a.current_allocation.employee %}
+                                    {{ a.current_allocation.employee.username|slice:":2"|upper }}
+                                    {% else %}
+                                    {{ a.current_allocation.department.name|slice:":2"|upper }}
+                                    {% endif %}
+                                </div>
+                                <span class="text-sm">
+                                    {% if a.current_allocation.employee %}
+                                    {{ a.current_allocation.employee.get_full_name|default:a.current_allocation.employee.username }}
+                                    {% else %}
+                                    {{ a.current_allocation.department.name }}
+                                    {% endif %}
+                                </span>
+                                {% else %}
+                                <span class="text-sm text-on-surface-variant italic">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-md text-right text-on-surface-variant" onclick="event.stopPropagation();">
+                                <a href="{% url 'asset_detail' a.pk %}" class="text-primary hover:text-primary-fixed transition-colors inline-block pt-1">
+                                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-on-surface-variant py-8 bg-[#0E0F12]">
+                                <span class="material-symbols-outlined text-[36px] opacity-40 mb-2">inventory_2</span>
+                                <p class="text-sm">No assets registered yet or matching the filters.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Table Footer / Pagination (Fixed at bottom of container) -->
+            <div class="h-10 border-t border-[#2A2C33] bg-[#0E0F12] flex items-center justify-between px-md shrink-0">
+                <span class="text-xs text-on-surface-variant" id="assets-counter">Showing {{ assets|length }} assets</span>
+                <div class="flex items-center gap-xs">
+                    <button class="w-6 h-6 rounded flex items-center justify-center text-on-surface-variant hover:bg-[#1F2126] hover:text-on-surface disabled:opacity-50"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
+                    <button class="w-6 h-6 rounded flex items-center justify-center text-on-surface-variant hover:bg-[#1F2126] hover:text-on-surface"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conceptual Detail Drawer (Visible when row is selected) -->
+        <div id="no-asset-selected" class="w-[320px] bg-[#17181C] border border-[#2A2C33] rounded-lg accent-highlight flex flex-col shrink-0 items-center justify-center p-xl text-center text-on-surface-variant">
+            <span class="material-symbols-outlined text-[48px] text-outline/30 mb-md">inventory_2</span>
+            <h3 class="font-headline-md text-on-surface text-[15px] font-bold">No Asset Selected</h3>
+            <p class="text-body-base text-[13px] mt-xs max-w-[220px] opacity-70">Click on any asset row in the table to display full metrics and actions.</p>
+        </div>
+
+        <div id="asset-detail-drawer" class="hidden w-[320px] bg-[#17181C] border border-[#2A2C33] rounded-lg accent-highlight flex flex-col shrink-0">
+            <!-- Drawer Header -->
+            <div class="p-lg border-b border-[#2A2C33] flex justify-between items-start">
+                <div>
+                    <div class="flex items-center gap-sm mb-1">
+                        <span class="font-mono-tabular text-primary text-sm font-bold" id="drawer-asset-tag">AF-0013</span>
+                        <span id="drawer-status-badge" class="inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">Available</span>
+                    </div>
+                    <h3 class="font-body-bold text-on-surface text-[15px] truncate max-w-[220px]" id="drawer-asset-name">Dell UltraSharp 32" 4K</h3>
+                </div>
+                <button class="text-on-surface-variant hover:text-on-surface transition-colors" onclick="closeDrawer()">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            <!-- Drawer Content -->
+            <div class="p-lg flex-1 overflow-y-auto custom-scroll space-y-lg">
+                <!-- Image Placeholder for Asset -->
+                <div class="w-full h-32 bg-[#0E0F12] border border-[#2A2C33] rounded flex items-center justify-center overflow-hidden relative">
+                    <img id="drawer-asset-image" class="w-full h-full object-cover opacity-80" alt="Asset product view" src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&amp;fit=crop&amp;w=400&amp;q=80"/>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#17181C] via-transparent to-transparent"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-y-md gap-x-sm text-[13px]">
+                    <div>
+                        <p class="font-label-caps text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Category</p>
+                        <p class="text-on-surface truncate" id="drawer-category">Hardware / Monitor</p>
+                    </div>
+                    <div>
+                        <p class="font-label-caps text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Location</p>
+                        <p class="text-on-surface truncate" id="drawer-location">HQ - Storage B</p>
+                    </div>
+                    <div>
+                        <p class="font-label-caps text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Serial Number</p>
+                        <p class="text-on-surface font-mono-tabular truncate" id="drawer-serial">DEL-32-U8891</p>
+                    </div>
+                    <div>
+                        <p class="font-label-caps text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Acquisition Date</p>
+                        <p class="text-on-surface font-mono-tabular" id="drawer-acq-date">2023-08-15</p>
+                    </div>
+                    <div>
+                        <p class="font-label-caps text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Condition</p>
+                        <p class="text-on-surface truncate" id="drawer-condition">Good</p>
+                    </div>
+                    <div>
+                        <p class="font-label-caps text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Bookable</p>
+                        <p class="text-on-surface" id="drawer-bookable">Yes</p>
+                    </div>
+                    <div class="col-span-2">
+                        <p class="font-label-caps text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Current Holder</p>
+                        <p class="text-on-surface truncate font-body-bold" id="drawer-holder">Unassigned</p>
+                    </div>
+                </div>
+                <div class="border-t border-[#2A2C33] pt-md">
+                    <h4 class="font-label-caps text-on-surface-variant text-[10px] mb-sm uppercase font-bold tracking-wider">Quick Actions</h4>
+                    <div class="flex flex-col gap-sm">
+                        <a id="drawer-detail-btn" href="#" class="w-full h-9 bg-[#6C8CFF] text-[#0E0F12] hover:bg-[#5a7bed] transition-colors rounded text-sm flex items-center justify-center gap-sm font-body-bold shadow-[0_4px_12px_rgba(108,140,255,0.15)]">
+                            <span class="material-symbols-outlined text-[16px]">info</span>
+                            View History &amp; Actions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    function getAssetImageUrl(category) {
+        const cat = (category || '').toLowerCase();
+        if (cat.includes('laptop') || cat.includes('computer')) {
+            return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=400&q=80';
+        } else if (cat.includes('monitor') || cat.includes('display')) {
+            return 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80';
+        } else if (cat.includes('chair') || cat.includes('desk') || cat.includes('furniture')) {
+            return 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80';
+        } else if (cat.includes('phone') || cat.includes('mobile')) {
+            return 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80';
+        }
+        return 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80';
+    }
+
+    function selectAsset(rowId, pk, tag, name, serial, category, status, statusDisplay, location, holder, acqDate, condition, bookable, detailUrl) {
+        // Remove selection from all rows
+        document.querySelectorAll('.asset-row').forEach(row => {
+            row.classList.remove('row-selected');
+        });
+        
+        // Add selection to active row
+        const activeRow = document.getElementById(rowId);
+        if (activeRow) {
+            activeRow.classList.add('row-selected');
+        }
+
+        // Toggle visibility
+        document.getElementById('no-asset-selected').classList.add('hidden');
+        document.getElementById('asset-detail-drawer').classList.remove('hidden');
+
+        // Populate drawer elements
+        document.getElementById('drawer-asset-tag').innerText = tag;
+        document.getElementById('drawer-asset-name').innerText = name;
+        document.getElementById('drawer-category').innerText = category;
+        document.getElementById('drawer-location').innerText = location;
+        document.getElementById('drawer-serial').innerText = serial;
+        document.getElementById('drawer-acq-date').innerText = acqDate || '—';
+        document.getElementById('drawer-condition').innerText = condition || '—';
+        document.getElementById('drawer-bookable').innerText = bookable;
+        document.getElementById('drawer-holder').innerText = holder;
+        document.getElementById('drawer-detail-btn').href = detailUrl;
+
+        // Image selection
+        document.getElementById('drawer-asset-image').src = getAssetImageUrl(category);
+
+        // Status Badge class updating
+        const badge = document.getElementById('drawer-status-badge');
+        badge.innerText = statusDisplay;
+        badge.className = 'inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider';
+        if (status === 'AVAILABLE') {
+            badge.classList.add('status-pill-available');
+        } else if (status === 'ALLOCATED') {
+            badge.classList.add('status-pill-danger');
+        } else {
+            badge.classList.add('status-pill-pending');
+        }
+    }
+
+    function closeDrawer() {
+        document.getElementById('asset-detail-drawer').classList.add('hidden');
+        document.getElementById('no-asset-selected').classList.remove('hidden');
+        document.querySelectorAll('.asset-row').forEach(row => {
+            row.classList.remove('row-selected');
+        });
+    }
+
+    function toggleSelectAll(master) {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = master.checked;
+        });
+    }
+
+    // Client-side filtering logic
+    function applyJSFilters() {
+        const selectedDept = document.getElementById('js-filter-department').value;
+        const selectedLoc = document.getElementById('js-filter-location').value;
+
+        let visibleCount = 0;
+
+        document.querySelectorAll('.asset-row').forEach(row => {
+            const dept = row.getAttribute('data-department');
+            const loc = row.getAttribute('data-location');
+
+            let show = true;
+            if (selectedDept && dept !== selectedDept) show = false;
+            if (selectedLoc && loc !== selectedLoc) show = false;
+
+            if (show) {
+                row.style.setProperty('display', 'table-row', 'important');
+                visibleCount++;
+            } else {
+                row.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        document.getElementById('assets-counter').innerText = `Showing ${visibleCount} assets`;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Collect departments and locations from table data dynamically to populate filter options
+        const departments = new Set();
+        const locations = new Set();
+        
+        document.querySelectorAll('.asset-row').forEach(row => {
+            const dept = row.getAttribute('data-department');
+            const loc = row.getAttribute('data-location');
+            if (dept && dept !== '—' && dept !== '') departments.add(dept);
+            if (loc && loc !== '—' && loc !== '') locations.add(loc);
+        });
+
+        const deptSelect = document.getElementById('js-filter-department');
+        departments.forEach(dept => {
+            const opt = document.createElement('option');
+            opt.value = dept;
+            opt.textContent = dept;
+            deptSelect.appendChild(opt);
+        });
+
+        const locSelect = document.getElementById('js-filter-location');
+        locations.forEach(loc => {
+            const opt = document.createElement('option');
+            opt.value = loc;
+            opt.textContent = loc;
+            locSelect.appendChild(opt);
+        });
+
+        // Select first asset automatically if available
+        const firstRow = document.querySelector('.asset-row');
+        if (firstRow) {
+            firstRow.click();
+        }
+    });
+</script>
+
+</body>
+</html>
