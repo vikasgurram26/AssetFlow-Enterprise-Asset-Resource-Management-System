@@ -1,18 +1,308 @@
-{% extends "core/base.html" %}
-{% block page_title %}Raise maintenance request{% endblock %}
-{% block content %}
-<div class="card-clean p-4" style="max-width:520px">
-  <form method="post">
-    {% csrf_token %}
-    {% for field in form %}
-      <div class="mb-3">
-        <label class="form-label">{{ field.label }}</label>
-        {{ field }}
-        {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
-      </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-primary">Submit request</button>
-    <a href="{% url 'maintenance_list' %}" class="btn btn-outline-secondary">Cancel</a>
-  </form>
+{% load static %}
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AssetFlow - Raise Maintenance Request</title>
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Tailwind Theme Config -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#0c141f",
+                        "surface-tint": "#b6c4ff",
+                        "secondary-container": "#00b173",
+                        "on-secondary-fixed": "#002112",
+                        "surface-dim": "#0c141f",
+                        "surface-container-high": "#222a36",
+                        "primary-fixed": "#dce1ff",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#ffdea9",
+                        "surface": "#0c141f",
+                        "on-tertiary": "#422c00",
+                        "outline": "#8e909f",
+                        "on-primary": "#002780",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "surface-container": "#18202c",
+                        "surface-container-low": "#141c27",
+                        "on-secondary-container": "#003b24",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#2d3541",
+                        "on-tertiary-fixed-variant": "#5e4100",
+                        "on-surface": "#dbe3f3",
+                        "secondary-fixed-dim": "#51df9c",
+                        "on-tertiary-container": "#3c2800",
+                        "tertiary-fixed-dim": "#f7bd51",
+                        "surface-bright": "#323a46",
+                        "surface-container-lowest": "#070f19",
+                        "inverse-surface": "#dbe3f3",
+                        "outline-variant": "#444653",
+                        "on-primary-container": "#002376",
+                        "on-primary-fixed-variant": "#0d3bad",
+                        "surface-variant": "#2d3541",
+                        "on-secondary-fixed-variant": "#005233",
+                        "primary-container": "#6c8cff",
+                        "on-tertiary-fixed": "#271900",
+                        "on-surface-variant": "#c4c5d5",
+                        "secondary": "#51df9c",
+                        "tertiary": "#f7bd51",
+                        "on-secondary": "#003822",
+                        "inverse-on-surface": "#29313d",
+                        "on-background": "#dbe3f3",
+                        "tertiary-container": "#bd8a20",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "inverse-primary": "#3255c6",
+                        "on-primary-fixed": "#001550",
+                        "secondary-fixed": "#71fcb6",
+                        "primary": "#b6c4ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xxl": "32px",
+                        "sm": "8px",
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "lg": "16px",
+                        "md": "12px",
+                        "base": "4px",
+                        "margin-desktop": "32px",
+                        "xl": "24px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-base": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "mono-tabular": ["Inter"],
+                        "body-bold": ["Inter"],
+                        "display-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-base": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "mono-tabular": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "400" }],
+                        "body-bold": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0E0F12; /* Canvas layer */
+            color: #dbe3f3;
+        }
+        
+        .glass-panel {
+            background: rgba(18, 22, 28, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Custom styles for Django-rendered form inputs to match theme */
+        .form-control, .form-select, select, textarea, input {
+            background-color: #0E0F12 !important;
+            border: 1px solid #2A2C33 !important;
+            color: #dbe3f3 !important;
+            border-radius: 0.375rem !important;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.875rem !important;
+            width: 100% !important;
+            transition: border-color 0.15s ease-in-out !important;
+        }
+        .form-control:focus, .form-select:focus, select:focus, textarea:focus, input:focus {
+            border-color: #6C8CFF !important;
+            box-shadow: 0 0 0 2px rgba(108, 140, 255, 0.15) !important;
+            outline: none !important;
+        }
+        .form-label {
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            color: #9CA3AF !important;
+            margin-bottom: 0.5rem !important;
+            display: block !important;
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base antialiased flex">
+
+<!-- SideNavBar -->
+<nav class="h-screen w-[220px] fixed left-0 top-0 bg-surface-container-low dark:bg-surface-container-low border-r border-outline-variant dark:border-outline-variant flex flex-col h-full py-xl z-50">
+    <div class="px-8 mb-10 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(129,156,255,0.3)]">
+            <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1">layers</span>
+        </div>
+        <div>
+            <h1 class="text-base font-semibold tracking-wide text-text-main">AssetFlow</h1>
+            <p class="text-[11px] font-medium text-text-muted uppercase tracking-wider mt-0.5">Enterprise</p>
+        </div>
+    </div>
+    
+    <div class="flex flex-col gap-sm flex-1 px-4">
+        <!-- Dashboard Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span class="text-sm font-medium">Dashboard</span>
+        </a>
+        
+        <!-- Organization Setup Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[18px]">domain</span>
+            <span class="text-sm font-medium">Organization</span>
+        </a>
+        
+        <!-- Assets Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+            <span class="text-sm font-medium">Assets</span>
+        </a>
+        
+        <!-- Allocation Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+            <span class="text-sm font-medium">Allocation</span>
+        </a>
+        
+        <!-- Booking Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+            <span class="text-sm font-medium">Booking</span>
+        </a>
+        
+        <!-- Maintenance Link (Active) -->
+        <a class="flex items-center gap-md px-4 py-2 bg-surface-highlight text-primary relative group transition-all rounded-lg no-underline" href="{% url 'maintenance_list' %}">
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            <span class="material-symbols-outlined text-[18px]">build</span>
+            <span class="text-sm font-medium">Maintenance</span>
+        </a>
+        
+        <!-- Audit Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[18px]">fact_check</span>
+            <span class="text-sm font-medium">Audit</span>
+        </a>
+        
+        <!-- Reports Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined text-[18px]">analytics</span>
+            <span class="text-sm font-medium">Reports</span>
+        </a>
+        
+        <!-- Notifications Link -->
+        <a class="flex items-center gap-md px-4 py-2 text-text-muted hover:text-text-main hover:bg-surface-highlight transition-all rounded-lg no-underline" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[18px]">notifications</span>
+            <span class="text-sm font-medium">Notifications</span>
+            {% if unread_notification_count %}
+            <span class="ml-auto bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">{{ unread_notification_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+    
+    <div class="px-6 mt-auto flex flex-col gap-4">
+        <a class="w-full bg-[#6C8CFF] text-[#0E0F12] font-body-bold text-body-bold h-10 rounded flex items-center justify-center hover:opacity-90 transition-opacity no-underline text-sm font-semibold" href="{% url 'asset_create' %}">
+            Register Asset
+        </a>
+        
+        <div class="pt-4 border-t border-surface-border flex items-center justify-between">
+            <div class="min-w-0">
+                <div class="text-xs font-semibold text-text-main truncate">{{ user.get_full_name|default:user.username }}</div>
+                <div class="text-[10px] text-text-muted mt-0.5">{{ user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="text-text-muted hover:text-danger transition-colors bg-none border-none p-1 cursor-pointer flex items-center">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Layout Area -->
+<div class="ml-[220px] flex-1 flex flex-col h-screen overflow-hidden">
+    <!-- TopNavBar -->
+    <header class="h-14 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant flex items-center justify-between px-xl w-full flex-shrink-0">
+        <form action="{% url 'asset_list' %}" method="get" class="relative focus-within:ring-1 focus-within:ring-primary rounded">
+            <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+            <input name="q" class="bg-[#0E0F12] border border-[#2A2C33] rounded pl-[28px] pr-sm py-[4px] text-mono-tabular font-mono-tabular text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-[#6C8CFF] focus:shadow-[0_0_0_2px_rgba(108,140,255,0.15)] w-[240px] transition-all" placeholder="Search assets, tickets..." type="text"/>
+        </form>
+        <div class="flex items-center gap-lg">
+            <div class="flex gap-md text-on-surface-variant">
+                <a href="{% url 'notification_list' %}" class="hover:text-on-surface transition-colors p-[2px] relative no-underline">
+                    <span class="material-symbols-outlined">notifications</span>
+                    {% if unread_notification_count %}
+                    <span class="absolute top-0 right-0 w-1.5 h-1.5 bg-danger rounded-full animate-pulse"></span>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant">
+                <img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9FWz62rnwSzGc7FUNrGytiqglUVoflu0bM7WJ5it27Qp87qbRmtq3iU8O_Uz-LvkXcfQMs_Q8M5uz9CUPwaqIIG3y77CNWp65p34Ef9QpuKNf_6g_qrOxdZDSoCKKWPVRFLwrjEtlYLIT14DqIyTnNcuQfTTRem5M4D-pe7aXd0HzsDVE2yry02raRVeGRimEjl_z0YRnFqfD7uNR94qBiZy0__H4RgBjo85eM6te3LdcAnsuhLynTQ"/>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto p-xl bg-[#0E0F12] flex flex-col gap-lg">
+        <!-- Page Header -->
+        <div class="border-b border-[#2A2C33] pb-lg">
+            <h2 class="font-headline-md text-headline-md text-on-surface m-0">Raise Maintenance Request</h2>
+            <p class="font-body-base text-body-base text-on-surface-variant">Report a technical problem or request scheduled servicing for a registered asset.</p>
+        </div>
+
+        <!-- Form Card Container -->
+        <div class="max-w-xl w-full mx-auto mt-4">
+            <div class="glass-panel rounded-xl p-8">
+                <form method="post" class="flex flex-col gap-6">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                    <div class="flex flex-col gap-1.5">
+                        <label class="form-label text-xs font-semibold uppercase tracking-wider text-text-muted">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-[#F0576B] text-xs mt-1 font-medium">{{ field.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="flex items-center gap-4 mt-4 pt-4 border-t border-surface-border">
+                        <button type="submit" class="bg-[#6C8CFF] hover:bg-[#597be6] text-[#0E0F12] font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
+                            Submit Request
+                        </button>
+                        <a href="{% url 'maintenance_list' %}" class="text-text-muted hover:text-text-main border border-surface-border py-2 px-6 rounded-lg transition-colors no-underline text-sm font-medium">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
 </div>
-{% endblock %}
+
+</body>
+</html>
