@@ -1,31 +1,545 @@
-{% extends "core/base.html" %}
-{% load core_extras %}
-{% block page_title %}Resource booking{% endblock %}
-{% block topbar_actions %}<a href="{% url 'booking_create' %}" class="btn btn-primary btn-sm">Book resource</a>{% endblock %}
-{% block content %}
-<form method="get" class="d-flex gap-2 mb-3">
-  <select name="asset" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-    <option value="">All resources</option>
-    {% for a in bookable_assets %}<option value="{{ a.pk }}" {% if request.GET.asset == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.asset_tag }} — {{ a.name }}</option>{% endfor %}
-  </select>
-</form>
-<div class="card-clean">
-  <table class="data w-100 mb-0">
-    <thead><tr><th>Resource</th><th>Booked by</th><th>Start</th><th>End</th><th>Status</th><th></th></tr></thead>
-    <tbody>
-      {% for b in bookings %}
-      <tr>
-        <td>{{ b.asset.asset_tag }} — {{ b.asset.name }}</td><td>{{ b.booked_by }}</td>
-        <td>{{ b.start_time|date:"M d, H:i" }}</td><td>{{ b.end_time|date:"M d, H:i" }}</td>
-        <td><span class="pill {{ b.status|status_pill }}">{{ b.get_status_display }}</span></td>
-        <td class="text-end">
-          {% if not b.is_cancelled and b.status == "UPCOMING" %}
-          <form method="post" action="{% url 'booking_cancel' b.pk %}" onsubmit="return confirm('Cancel this booking?');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Cancel</button></form>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No bookings yet.</td></tr>{% endfor %}
-    </tbody>
-  </table>
+{% load static %}
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Resource Booking - AssetFlow</title>
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#141c27",
+                      "on-error-container": "#ffdad6",
+                      "primary-fixed-dim": "#b6c4ff",
+                      "on-primary": "#002780",
+                      "surface-container-lowest": "#070f19",
+                      "surface-bright": "#323a46",
+                      "surface-tint": "#b6c4ff",
+                      "on-surface": "#dbe3f3",
+                      "tertiary-container": "#bd8a20",
+                      "on-primary-container": "#002376",
+                      "secondary": "#51df9c",
+                      "tertiary-fixed": "#ffdea9",
+                      "outline-variant": "#444653",
+                      "on-primary-fixed": "#001550",
+                      "surface-container-highest": "#2d3541",
+                      "on-error": "#690005",
+                      "surface-container-high": "#222a36",
+                      "primary": "#b6c4ff",
+                      "on-secondary-container": "#003b24",
+                      "on-primary-fixed-variant": "#0d3bad",
+                      "on-tertiary-fixed": "#271900",
+                      "on-surface-variant": "#c4c5d5",
+                      "tertiary": "#f7bd51",
+                      "primary-container": "#6c8cff",
+                      "on-tertiary": "#422c00",
+                      "inverse-surface": "#dbe3f3",
+                      "error": "#ffb4ab",
+                      "primary-fixed": "#dce1ff",
+                      "on-secondary-fixed": "#002112",
+                      "surface-dim": "#0c141f",
+                      "on-background": "#dbe3f3",
+                      "on-tertiary-fixed-variant": "#5e4100",
+                      "surface-container": "#18202c",
+                      "surface-variant": "#2d3541",
+                      "error-container": "#93000a",
+                      "secondary-fixed-dim": "#51df9c",
+                      "on-secondary-fixed-variant": "#005233",
+                      "inverse-primary": "#3255c6",
+                      "secondary-container": "#00b173",
+                      "outline": "#8e909f",
+                      "secondary-fixed": "#71fcb6",
+                      "on-secondary": "#003822",
+                      "surface": "#0c141f",
+                      "on-tertiary-container": "#3c2800",
+                      "inverse-on-surface": "#29313d",
+                      "tertiary-fixed-dim": "#f7bd51",
+                      "background": "#0c141f"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "sm": "8px",
+                      "md": "12px",
+                      "lg": "16px",
+                      "xxl": "32px",
+                      "gutter": "16px",
+                      "margin-desktop": "32px",
+                      "xl": "24px",
+                      "xs": "4px",
+                      "margin-mobile": "16px"
+              },
+              "fontFamily": {
+                      "body-base": ["Inter"],
+                      "display-lg-mobile": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "mono-tabular": ["Inter"],
+                      "body-bold": ["Inter"]
+              },
+              "fontSize": {
+                      "body-base": ["14px", {"lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400"}],
+                      "display-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-caps": ["11px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "mono-tabular": ["13px", {"lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "400"}],
+                      "body-bold": ["14px", {"lineHeight": "20px", "letterSpacing": "0", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+    <style>
+        /* Tooltip styles */
+        .tooltip-container {
+            position: relative;
+        }
+        .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            z-index: 50;
+            white-space: nowrap;
+        }
+        .tooltip-container:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Custom scrollbar for timeline */
+        .timeline-scroll::-webkit-scrollbar {
+            height: 6px;
+            width: 4px;
+        }
+        .timeline-scroll::-webkit-scrollbar-track {
+            background: #17181C;
+            border-radius: 4px;
+        }
+        .timeline-scroll::-webkit-scrollbar-thumb {
+            background: #2A2C33;
+            border-radius: 4px;
+        }
+        .timeline-scroll::-webkit-scrollbar-thumb:hover {
+            background: #444653;
+        }
+
+        /* Hairline borders */
+        .border-hairline {
+            border-color: #2A2C33;
+        }
+        
+        /* Glass panel */
+        .glass-panel {
+            background: rgba(18, 22, 28, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-[#0E0F12] text-on-surface font-body-base antialiased overflow-y-auto">
+<!-- Shell Layout Container -->
+<div class="flex min-h-screen w-full">
+<!-- SideNavBar -->
+<nav class="hidden md:flex bg-surface-container-low border-r border-outline-variant h-screen w-[220px] fixed left-0 top-0 flex-col py-xl z-50">
+    <!-- Header Brand -->
+    <div class="px-lg pb-xl flex items-center gap-md">
+        <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">layers</span>
+        </div>
+        <div>
+            <h1 class="font-headline-md text-headline-md font-bold text-on-surface">AssetFlow</h1>
+            <p class="font-label-caps text-label-caps text-on-surface-variant">Enterprise Admin</p>
+        </div>
+    </div>
+    
+    <!-- CTA -->
+    <div class="px-lg mb-xl">
+        <a class="w-full bg-[#6C8CFF] text-[#0E0F12] font-body-bold text-body-bold h-9 rounded flex items-center justify-center gap-sm hover:opacity-90 transition-opacity no-underline text-xs" href="{% url 'asset_create' %}">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Register Asset
+        </a>
+    </div>
+    
+    <!-- Navigation Links -->
+    <div class="flex-1 overflow-y-auto">
+        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span class="font-body-base text-body-base">Dashboard</span>
+        </a>
+        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined">domain</span>
+            <span class="font-body-base text-body-base">Organization</span>
+        </a>
+        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined">inventory_2</span>
+            <span class="font-body-base text-body-base">Assets</span>
+        </a>
+        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined">sync_alt</span>
+            <span class="font-body-base text-body-base">Allocation</span>
+        </a>
+        <!-- Active State -->
+        <a class="flex items-center gap-md px-lg py-md text-primary bg-primary-container/10 border-r-2 border-primary cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined">calendar_month</span>
+            <span class="font-body-bold text-body-bold">Booking</span>
+        </a>
+        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'maintenance_list' %}">
+            <span class="material-symbols-outlined">build</span>
+            <span class="font-body-base text-body-base">Maintenance</span>
+        </a>
+        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined">fact_check</span>
+            <span class="font-body-base text-body-base">Audit</span>
+        </a>
+        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined">analytics</span>
+            <span class="font-body-base text-body-base">Reports</span>
+        </a>
+        <a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:scale-95 duration-150 no-underline" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined">notifications</span>
+            <span class="font-body-base text-body-base">Notifications</span>
+        </a>
+    </div>
+    
+    <!-- User Profile (Bottom) -->
+    <div class="px-lg pt-md mt-auto border-t border-outline-variant">
+        <div class="flex items-center gap-md p-sm rounded transition-colors -ml-sm">
+            <div class="flex-1 min-w-0">
+                <p class="font-body-bold text-body-bold text-on-surface truncate">{{ user.get_full_name|default:user.username }}</p>
+                <p class="font-label-caps text-label-caps text-on-surface-variant truncate">{{ user.get_role_display }}</p>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="text-text-muted hover:text-danger transition-colors bg-none border-none p-1 cursor-pointer flex items-center">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content Area -->
+<main class="flex-1 ml-0 md:ml-[220px] flex flex-col min-h-screen relative bg-[#0E0F12]">
+    <!-- TopNavBar -->
+    <header class="h-14 bg-surface border-b border-outline-variant flex items-center justify-between px-xl shrink-0 z-40">
+        <div class="flex items-center gap-md">
+            <h2 class="font-headline-md text-headline-md font-bold text-on-surface">Resource Booking</h2>
+        </div>
+        <div class="flex items-center gap-md">
+            <a class="bg-[#6C8CFF] text-[#0E0F12] font-body-bold text-body-bold px-md h-9 rounded flex items-center gap-sm hover:opacity-90 transition-opacity no-underline text-xs font-semibold" href="{% url 'booking_create' %}">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Book Resource
+            </a>
+        </div>
+    </header>
+
+    <!-- Workspace Canvas -->
+    <div class="flex-1 p-lg flex flex-col gap-lg max-w-[1440px] mx-auto w-full">
+        
+        <!-- Filters & Controls Bar -->
+        <div class="bg-[#17181C] border border-[#2A2C33] rounded-lg p-sm flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-xs">
+                <form method="get" class="flex gap-2">
+                    <select name="asset" class="bg-[#0E0F12] border border-[#2A2C33] text-on-surface rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-[#6C8CFF] focus:ring-1 focus:ring-[#6C8CFF]" onchange="this.form.submit()">
+                        <option value="">All bookable resources</option>
+                        {% for a in bookable_assets %}
+                            <option value="{{ a.pk }}" {% if request.GET.asset == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.asset_tag }} — {{ a.name }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            
+            <div class="flex items-center gap-md">
+                <div class="flex items-center gap-sm px-sm py-xs bg-[#0E0F12] border border-[#2A2C33] rounded">
+                    <button class="text-on-surface-variant hover:text-on-surface" id="btn-prev-day"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+                    <span class="font-mono-tabular text-mono-tabular text-on-surface" id="selected-date-label">Today</span>
+                    <button class="text-on-surface-variant hover:text-on-surface" id="btn-next-day"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                </div>
+                <div class="flex items-center gap-sm">
+                    <div class="flex items-center gap-xs">
+                        <div class="w-3 h-3 bg-primary-container/40 border-l-2 border-primary"></div>
+                        <span class="font-label-caps text-label-caps text-on-surface-variant">Confirmed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline Grid Area -->
+        <div class="bg-[#17181C] border border-[#2A2C33] rounded-lg overflow-hidden flex flex-col shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <!-- Timeline Header (Time Scale) -->
+            <div class="flex border-b border-[#2A2C33] bg-[#0E0F12] shrink-0 sticky top-0 z-20">
+                <!-- Resource Label Header -->
+                <div class="w-64 shrink-0 border-r border-[#2A2C33] p-md flex items-center bg-[#0E0F12]">
+                    <span class="font-label-caps text-label-caps text-on-surface-variant">Resource</span>
+                </div>
+                <!-- Time Slots (08:00 to 18:00) -->
+                <div class="flex-1 flex overflow-hidden">
+                    <div class="flex w-full">
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">08:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">09:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">10:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">11:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">12:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">13:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">14:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">15:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">16:00</span></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/30 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">17:00</span></div>
+                        <div class="flex-1 p-sm text-center"><span class="font-mono-tabular text-mono-tabular text-on-surface-variant">18:00</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Timeline Body -->
+            <div class="flex flex-col timeline-scroll max-h-[300px] overflow-y-auto">
+                {% for a in bookable_assets %}
+                <!-- Row: Resource -->
+                <div class="flex border-b border-[#2A2C33] h-[60px] group hover:bg-[#1F2126]/50 transition-colors" id="timeline-row-{{ a.pk }}">
+                    <div class="w-64 shrink-0 border-r border-[#2A2C33] p-md flex items-center bg-[#17181C] group-hover:bg-[#1F2126]/50 transition-colors z-10">
+                        <div class="flex items-center gap-sm">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[20px]">devices</span>
+                            <div>
+                                <div class="font-body-bold text-body-bold text-on-surface text-sm truncate w-[160px]">{{ a.name }}</div>
+                                <div class="font-label-caps text-label-caps text-[#51df9c]">{{ a.asset_tag }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 relative w-full flex timeline-events">
+                        <!-- Grid Lines -->
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10"></div>
+                        <div class="flex-1 border-r border-[#2A2C33]/10 bg-[#1F2126]/10"></div>
+                        <div class="flex-1"></div>
+                        <!-- Dynamic Event Blocks will be inserted here by JS -->
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-text-muted text-sm bg-[#17181C]">No bookable assets found.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Detailed Bookings Log Table -->
+        <div class="glass-panel rounded-xl flex flex-col overflow-hidden">
+            <div class="px-6 py-5 border-b border-outline-variant flex justify-between items-center bg-surface-container-high/40">
+                <h3 class="text-sm font-semibold text-on-surface">Bookings History Log</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#0E0F12]/80">
+                            <th class="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Resource</th>
+                            <th class="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Booked by</th>
+                            <th class="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Start Time</th>
+                            <th class="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">End Time</th>
+                            <th class="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">Status</th>
+                            <th class="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant border-b border-outline-variant"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for b in bookings %}
+                        <tr class="border-b border-outline-variant/40 hover:bg-[#1F2126]/50 transition-colors group">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-on-surface">{{ b.asset.name }}</div>
+                                <div class="text-xs text-primary mt-0.5">{{ b.asset.asset_tag }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-on-surface-variant">
+                                {{ b.booked_by.get_full_name|default:b.booked_by.username }}
+                            </td>
+                            <td class="px-6 py-4 text-on-surface-variant font-mono">
+                                {{ b.start_time|date:"Y-m-d H:i" }}
+                            </td>
+                            <td class="px-6 py-4 text-on-surface-variant font-mono">
+                                {{ b.end_time|date:"Y-m-d H:i" }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="font-label-caps text-label-caps {% if b.is_cancelled %}text-danger bg-danger/10 border border-danger/15{% elif b.status == 'COMPLETED' %}text-on-surface-variant bg-surface-container-highest/20{% else %}text-[#3ECF8E] bg-[#122A22] border border-[#3ECF8E]/15{% endif %} px-2 py-0.5 rounded">
+                                    {% if b.is_cancelled %}Cancelled{% else %}{{ b.get_status_display }}{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                {% if not b.is_cancelled and b.status == "UPCOMING" %}
+                                <form method="post" action="{% url 'booking_cancel' b.pk %}" onsubmit="return confirm('Cancel this booking?');">
+                                    {% csrf_token %}
+                                    <button class="bg-[#2C1418] hover:bg-[#3d1a20] text-[#F0576B] border border-[#F0576B]/30 px-3 py-1 rounded text-xs transition-colors font-semibold">
+                                        Cancel
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-on-surface-variant py-8 bg-[#17181C]">No bookings recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+</main>
 </div>
-{% endblock %}
+
+<!-- Raw JSON Data Bridge of Bookings -->
+<script id="bookings-data" type="application/json">
+[
+  {% for b in bookings %}
+  {
+    "id": {{ b.pk }},
+    "asset_id": {{ b.asset.pk }},
+    "asset_name": "{{ b.asset.name|escapejs }}",
+    "booked_by": "{{ b.booked_by.get_full_name|default:b.booked_by.username|escapejs }}",
+    "start_time": "{{ b.start_time|date:'c' }}",
+    "end_time": "{{ b.end_time|date:'c' }}",
+    "status": "{{ b.status|escapejs }}",
+    "is_cancelled": {% if b.is_cancelled %}true{% else %}false{% endif %}
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+]
+</script>
+
+<script>
+  let selectedDate = new Date(); // default to today
+  let bookings = [];
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const rawData = document.getElementById("bookings-data").textContent;
+    if (rawData.trim()) {
+      bookings = JSON.parse(rawData);
+    }
+    
+    // Wire up Day chevrons
+    document.getElementById("btn-prev-day").addEventListener("click", () => {
+      selectedDate.setDate(selectedDate.getDate() - 1);
+      renderTimeline();
+    });
+    
+    document.getElementById("btn-next-day").addEventListener("click", () => {
+      selectedDate.setDate(selectedDate.getDate() + 1);
+      renderTimeline();
+    });
+    
+    renderTimeline();
+  });
+
+  function renderTimeline() {
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    
+    // Check if it's today's date
+    const today = new Date();
+    if (selectedDate.toDateString() === today.toDateString()) {
+      document.getElementById('selected-date-label').textContent = "Today (" + selectedDate.toLocaleDateString('en-US', options) + ")";
+    } else {
+      document.getElementById('selected-date-label').textContent = selectedDate.toLocaleDateString('en-US', options);
+    }
+    
+    // Clear all existing timeline blocks
+    document.querySelectorAll('.timeline-events').forEach(el => {
+      // Retain the 10 grid lines
+      el.querySelectorAll('.tooltip-container').forEach(card => card.remove());
+    });
+    
+    // Format selectedDate bounds
+    const dateStart = new Date(selectedDate);
+    dateStart.setHours(0,0,0,0);
+    const dateEnd = new Date(selectedDate);
+    dateEnd.setHours(23,59,59,999);
+    
+    // Filter active (non-cancelled) bookings that fall on this day
+    const dailyBookings = bookings.filter(b => {
+      if (b.is_cancelled) return false;
+      const bStart = new Date(b.start_time);
+      const bEnd = new Date(b.end_time);
+      return bStart <= dateEnd && bEnd >= dateStart;
+    });
+    
+    dailyBookings.forEach(b => {
+      const row = document.getElementById(`timeline-row-${b.asset_id}`);
+      if (!row) return;
+      
+      const eventsContainer = row.querySelector('.timeline-events');
+      if (!eventsContainer) return;
+      
+      const bStart = new Date(b.start_time);
+      const bEnd = new Date(b.end_time);
+      
+      // Clamp bounds to timeline 08:00 - 18:00
+      const timelineStart = new Date(selectedDate);
+      timelineStart.setHours(8, 0, 0, 0);
+      const timelineEnd = new Date(selectedDate);
+      timelineEnd.setHours(18, 0, 0, 0);
+      
+      const clampStart = bStart < timelineStart ? timelineStart : bStart;
+      const clampEnd = bEnd > timelineEnd ? timelineEnd : bEnd;
+      
+      if (clampStart >= clampEnd) return; // outside timeline frame
+      
+      const startHour = clampStart.getHours() + clampStart.getMinutes() / 60;
+      const endHour = clampEnd.getHours() + clampEnd.getMinutes() / 60;
+      
+      const leftPercent = ((startHour - 8) / 10) * 100;
+      const widthPercent = ((endHour - startHour) / 10) * 100;
+      
+      // Event block
+      const eventEl = document.createElement('div');
+      eventEl.className = 'absolute top-[8px] h-[44px] bg-primary-container/20 border-l-4 border-primary rounded-r cursor-pointer tooltip-container hover:bg-primary-container/30 transition-colors z-20 overflow-hidden';
+      eventEl.style.left = `${leftPercent}%`;
+      eventEl.style.width = `${widthPercent}%`;
+      
+      const startStr = bStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      const endStr = bEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      
+      eventEl.innerHTML = `
+        <div class="px-sm py-xs truncate h-full">
+          <span class="font-body-bold text-body-bold text-primary text-xs block truncate">${b.asset_name}</span>
+          <span class="font-mono-tabular text-mono-tabular text-on-surface-variant text-[10px] block truncate">${b.booked_by}</span>
+        </div>
+        <!-- Tooltip -->
+        <div class="tooltip-content bg-[#2d3541] border border-[#444653] shadow-lg rounded p-sm text-left">
+          <div class="font-body-bold text-body-bold text-on-surface mb-1">${b.asset_name}</div>
+          <div class="font-mono-tabular text-mono-tabular text-on-surface-variant mb-2">${startStr} - ${endStr}</div>
+          <div class="flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[14px] text-on-surface-variant">person</span>
+            <span class="font-body-base text-body-base text-on-surface-variant text-xs">${b.booked_by}</span>
+          </div>
+        </div>
+      `;
+      eventsContainer.appendChild(eventEl);
+    });
+  }
+</script>
+</body>
+</html>
