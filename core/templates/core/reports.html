@@ -1,52 +1,586 @@
-{% extends "core/base.html" %}
-{% block page_title %}Reports & analytics{% endblock %}
-{% block topbar_actions %}<a href="{% url 'reports_csv' %}" class="btn btn-outline-secondary btn-sm">Export CSV</a>{% endblock %}
-{% block content %}
-<div class="row g-3">
-  <div class="col-lg-6">
-    <div class="card-clean p-3 mb-3">
-      <div class="section-head"><h2>Department-wise allocation</h2></div>
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Department</th><th>Assets</th></tr></thead>
-        <tbody>
-          {% for name, count in by_department.items %}<tr><td>{{ name }}</td><td>{{ count }}</td></tr>
-          {% empty %}<tr><td colspan="2" class="text-center text-muted py-3">No data yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
+{% load static %}
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AssetFlow - Reports &amp; Analytics</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        surface: "#080A0D",
+                        "surface-raised": "rgba(18, 22, 28, 0.6)",
+                        "surface-border": "rgba(255, 255, 255, 0.06)",
+                        "surface-highlight": "rgba(255, 255, 255, 0.03)",
+                        primary: "#819CFF",
+                        "primary-dim": "rgba(129, 156, 255, 0.15)",
+                        secondary: "#4ADE80",
+                        "secondary-dim": "rgba(74, 222, 128, 0.15)",
+                        warning: "#FBBF24",
+                        "warning-dim": "rgba(251, 191, 36, 0.15)",
+                        danger: "#F87171",
+                        "danger-dim": "rgba(248, 113, 113, 0.15)",
+                        text: {
+                            main: "#F3F4F6",
+                            muted: "#9CA3AF",
+                            faint: "#6B7280"
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Inter', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20; }
+        
+        /* Subtle scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        .glass-panel {
+            background: rgba(18, 22, 28, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sparkline-up { stroke: #4ADE80; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        .sparkline-down { stroke: #F87171; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        .sparkline-neutral { stroke: #819CFF; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        
+        .chart-point:hover { stroke-width: 4; cursor: pointer; }
+        .tooltip { visibility: hidden; opacity: 0; transition: opacity 0.2s; }
+        .chart-point:hover + .tooltip { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body class="bg-surface text-text-main font-sans antialiased min-h-screen flex overflow-hidden selection:bg-primary selection:text-surface">
+
+<!-- Modern Sidebar -->
+<nav class="h-screen w-[260px] fixed left-0 top-0 bg-surface/80 backdrop-blur-xl border-r border-surface-border flex flex-col py-8 z-50">
+    <div class="px-8 mb-10 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(129,156,255,0.3)]">
+            <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1">layers</span>
+        </div>
+        <div>
+            <h1 class="text-base font-semibold tracking-wide text-text-main">AssetFlow</h1>
+            <p class="text-[11px] font-medium text-text-muted uppercase tracking-wider mt-0.5">Enterprise</p>
+        </div>
     </div>
-    <div class="card-clean p-3">
-      <div class="section-head"><h2>By category — total vs allocated</h2></div>
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Category</th><th>Total</th><th>Allocated</th></tr></thead>
-        <tbody>
-          {% for name, d in by_category.items %}<tr><td>{{ name }}</td><td>{{ d.total }}</td><td>{{ d.allocated }}</td></tr>
-          {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">No data yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
+    
+    <div class="flex flex-col gap-1 px-4 flex-1">
+        <!-- Dashboard Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-text-muted hover:text-text-main hover:bg-surface-highlight" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span class="text-sm font-medium">Dashboard</span>
+        </a>
+        
+        <!-- Organization Setup Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-text-muted hover:text-text-main hover:bg-surface-highlight" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[18px]">domain</span>
+            <span class="text-sm font-medium">Organization</span>
+        </a>
+        
+        <!-- Assets Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-text-muted hover:text-text-main hover:bg-surface-highlight" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+            <span class="text-sm font-medium">Assets</span>
+        </a>
+        
+        <!-- Allocation Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-text-muted hover:text-text-main hover:bg-surface-highlight" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+            <span class="text-sm font-medium">Allocation</span>
+        </a>
+        
+        <!-- Booking Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-text-muted hover:text-text-main hover:bg-surface-highlight" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+            <span class="text-sm font-medium">Booking</span>
+        </a>
+        
+        <!-- Maintenance Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-text-muted hover:text-text-main hover:bg-surface-highlight" href="{% url 'maintenance_list' %}">
+            <span class="material-symbols-outlined text-[18px]">build</span>
+            <span class="text-sm font-medium">Maintenance</span>
+        </a>
+        
+        <!-- Audit Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-text-muted hover:text-text-main hover:bg-surface-highlight" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[18px]">fact_check</span>
+            <span class="text-sm font-medium">Audit</span>
+        </a>
+        
+        <div class="mt-6 mb-2 px-4">
+            <p class="text-[10px] font-semibold text-text-faint uppercase tracking-wider">Insights</p>
+        </div>
+        
+        <!-- Reports Link (Active) -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-surface-highlight text-primary relative group transition-all" href="{% url 'reports' %}">
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            <span class="material-symbols-outlined text-[18px]">analytics</span>
+            <span class="text-sm font-medium">Reports</span>
+        </a>
+        
+        <!-- Notifications Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-text-muted hover:text-text-main hover:bg-surface-highlight" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[18px]">notifications</span>
+            <span class="text-sm font-medium">Notifications</span>
+            {% if unread_notification_count %}
+            <span class="ml-auto bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">{{ unread_notification_count }}</span>
+            {% endif %}
+        </a>
     </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="card-clean p-3 mb-3">
-      <div class="section-head"><h2>Most-maintained assets</h2></div>
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Asset tag</th><th>Maintenance count</th></tr></thead>
-        <tbody>
-          {% for tag, count in most_maintained %}<tr><td>{{ tag }}</td><td>{{ count }}</td></tr>
-          {% empty %}<tr><td colspan="2" class="text-center text-muted py-3">No maintenance history yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
+    
+    <div class="px-6 mt-auto flex flex-col gap-4">
+        <a class="w-full bg-text-main hover:bg-white text-surface text-sm font-semibold h-10 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]" href="{% url 'asset_create' %}">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Register Asset
+        </a>
+        
+        <div class="pt-4 border-t border-surface-border flex items-center justify-between">
+            <div class="min-w-0">
+                <div class="text-xs font-semibold text-text-main truncate">{{ user.get_full_name|default:user.username }}</div>
+                <div class="text-[10px] text-text-muted mt-0.5">{{ user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="text-text-muted hover:text-danger transition-colors bg-none border-none p-1 cursor-pointer flex items-center">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
     </div>
-    <div class="card-clean p-3">
-      <div class="section-head"><h2>Available longest (nearing review)</h2></div>
-      <table class="data w-100 mb-0">
-        <thead><tr><th>Asset</th><th>Acquired</th></tr></thead>
-        <tbody>
-          {% for a in nearing_retirement %}<tr><td>{{ a.asset_tag }} — {{ a.name }}</td><td>{{ a.acquisition_date }}</td></tr>
-          {% empty %}<tr><td colspan="2" class="text-center text-muted py-3">No data yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+</nav>
+
+<!-- Main Content -->
+<div class="flex-1 ml-[260px] flex flex-col h-screen relative bg-[radial-gradient(ellipse_at_top_right,_var(--tw-colors-primary-dim),_transparent_50%)]">
+    <!-- Top Navigation -->
+    <header class="h-16 border-b border-surface-border flex items-center justify-between px-8 w-full sticky top-0 z-40 bg-surface/50 backdrop-blur-md">
+        <form action="{% url 'asset_list' %}" method="get" class="relative group">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px] group-focus-within:text-primary transition-colors">search</span>
+            <input name="q" class="bg-surface-raised border border-surface-border rounded-lg h-9 pl-10 pr-4 py-0 text-sm text-text-main placeholder:text-text-faint focus:outline-none focus:border-primary/50 focus:bg-surface-highlight focus:ring-1 focus:ring-primary/50 w-[320px] transition-all" placeholder="Search analytics..." type="text"/>
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
+                <kbd class="hidden sm:inline-block border border-surface-border bg-surface rounded px-1.5 text-[10px] text-text-faint font-mono">⌘</kbd>
+                <kbd class="hidden sm:inline-block border border-surface-border bg-surface rounded px-1.5 text-[10px] text-text-faint font-mono">K</kbd>
+            </div>
+        </form>
+        <div class="flex items-center gap-5">
+            <a href="{% url 'notification_list' %}" class="text-text-muted hover:text-text-main transition-colors relative">
+                <span class="material-symbols-outlined text-[20px]">notifications</span>
+                {% if unread_notification_count %}
+                <span class="absolute top-0 right-0 w-2 h-2 bg-danger rounded-full animate-pulse"></span>
+                {% endif %}
+            </a>
+            <div class="w-8 h-8 rounded-full overflow-hidden border border-surface-border cursor-pointer hover:border-primary transition-colors ring-2 ring-transparent hover:ring-primary/20">
+                <img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9FWz62rnwSzGc7FUNrGytiqglUVoflu0bM7WJ5it27Qp87qbRmtq3iU8O_Uz-LvkXcfQMs_Q8M5uz9CUPwaqIIG3y77CNWp65p34Ef9QpuKNf_6g_qrOxdZDSoCKKWPVRFLwrjEtlYLIT14DqIyTnNcuQfTTRem5M4D-pe7aXd0HzsDVE2yry02raRVeGRimEjl_z0YRnFqfD7uNR94qBiZy0__H4RgBjo85eM6te3LdcAnsuhLynTQ"/>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Scrollable -->
+    <main class="flex-1 overflow-y-auto p-8 flex flex-col gap-8 w-full max-w-[1600px] mx-auto">
+        <!-- Page Header -->
+        <div class="flex justify-between items-end">
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight text-text-main mb-1">Reports &amp; Analytics</h2>
+                <p class="text-sm text-text-muted">Telemetry-driven insights for the current fiscal quarter.</p>
+            </div>
+            <div class="flex gap-3">
+                <a class="glass-panel hover:bg-surface-highlight text-text-main text-sm font-medium h-10 px-4 rounded-lg transition-all flex items-center gap-2 no-underline" href="{% url 'reports_csv' %}">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    Export CSV
+                </a>
+            </div>
+        </div>
+
+        <!-- Premium KPI Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- KPI 1 -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-secondary/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Total Registered Assets</span>
+                    <div class="w-6 h-6 rounded-md bg-secondary/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-secondary">inventory_2</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight font-mono" id="kpi-total-assets">0</span>
+                </div>
+                <div class="mt-4 h-6 w-full">
+                    <svg class="w-full h-full opacity-60" preserveAspectRatio="none" viewBox="0 0 100 20">
+                        <path class="sparkline-up" d="M0 15 L20 10 L40 12 L60 5 L80 8 L100 2"></path>
+                    </svg>
+                </div>
+            </div>
+            <!-- KPI 2 -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-primary/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Avg Allocation Rate</span>
+                    <div class="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-primary">analytics</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight font-mono" id="kpi-allocation-rate">0%</span>
+                </div>
+                <div class="mt-4 h-6 w-full">
+                    <svg class="w-full h-full opacity-60" preserveAspectRatio="none" viewBox="0 0 100 20">
+                        <path class="sparkline-neutral" d="M0 18 L20 12 L40 15 L60 8 L80 10 L100 4"></path>
+                    </svg>
+                </div>
+            </div>
+            <!-- KPI 3 -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-warning/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Top Maintenance Count</span>
+                    <div class="w-6 h-6 rounded-md bg-warning/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-warning">build</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight font-mono" id="kpi-top-maintenance">0</span>
+                </div>
+                <div class="mt-4 h-6 w-full">
+                    <svg class="w-full h-full opacity-60" preserveAspectRatio="none" viewBox="0 0 100 20">
+                        <path class="sparkline-neutral" d="M0 10 L20 10 L40 10 L60 10 L80 5 L100 5" style="stroke: #FBBF24"></path>
+                    </svg>
+                </div>
+            </div>
+            <!-- KPI 4 -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-danger/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Nearing Review</span>
+                    <div class="w-6 h-6 rounded-md bg-danger/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-danger">warning</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight font-mono" id="kpi-nearing-retirement">0</span>
+                </div>
+                <div class="mt-4 h-6 w-full">
+                    <svg class="w-full h-full opacity-60" preserveAspectRatio="none" viewBox="0 0 100 20">
+                        <path class="sparkline-down" d="M0 5 L20 8 L40 6 L60 12 L80 15 L100 18"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area Split -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Utilization by Department -->
+            <div class="lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col h-[400px] relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+                <div class="flex justify-between items-center mb-6 relative z-10">
+                    <h3 class="text-sm font-semibold text-text-main">Asset Allocations by Department</h3>
+                </div>
+                <div class="flex-1 relative z-10">
+                    <svg id="department-chart" class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 800 300">
+                        <defs>
+                            <linearGradient id="area-grad" x1="0%" x2="0%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#819CFF" stop-opacity="0.3"></stop>
+                                <stop offset="100%" stop-color="#819CFF" stop-opacity="0"></stop>
+                            </linearGradient>
+                        </defs>
+                        <!-- Grid lines -->
+                        <line stroke="#ffffff" stroke-opacity="0.06" x1="0" x2="800" y1="50" y2="50"></line>
+                        <line stroke="#ffffff" stroke-opacity="0.06" x1="0" x2="800" y1="125" y2="125"></line>
+                        <line stroke="#ffffff" stroke-opacity="0.06" x1="0" x2="800" y1="200" y2="200"></line>
+                        <line stroke="#ffffff" stroke-opacity="0.06" x1="0" x2="800" y1="275" y2="275"></line>
+                        <!-- Y-axis labels -->
+                        <text fill="#9CA3AF" font-family="monospace" font-size="10" x="0" y="54">Max</text>
+                        <text fill="#9CA3AF" font-family="monospace" font-size="10" x="0" y="162">Mid</text>
+                        <text fill="#9CA3AF" font-family="monospace" font-size="10" x="0" y="270">0</text>
+                        
+                        <g id="chart-dynamic-content"></g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Most Maintained Assets -->
+            <div class="glass-panel rounded-xl flex flex-col h-[400px]">
+                <div class="px-6 py-5 border-b border-surface-border flex justify-between items-center">
+                    <h3 class="text-sm font-semibold text-text-main">Most Maintained Assets</h3>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2">
+                    {% for tag, count in most_maintained %}
+                    <div class="flex items-center justify-between p-3 hover:bg-surface-highlight rounded-lg transition-colors group cursor-pointer border border-transparent hover:border-surface-border">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-primary-dim flex items-center justify-center text-primary font-mono text-[11px] font-bold">#{{ forloop.counter }}</div>
+                            <div>
+                                <p class="text-sm font-medium text-text-main group-hover:text-primary transition-colors">{{ tag }}</p>
+                                <p class="font-mono text-xs text-text-muted mt-0.5">Asset Tag</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-mono text-sm font-semibold text-secondary">{{ count }} repairs</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-6 text-center text-text-muted text-sm h-full flex items-center justify-center">No maintenance records found.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Category Allocation Chart -->
+            <div class="lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col h-[400px] relative overflow-hidden">
+                <div class="flex justify-between items-center mb-6 relative z-10">
+                    <h3 class="text-sm font-semibold text-text-main">Category Breakdown: Total vs Allocated</h3>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-[#819CFF]"></div>
+                            <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Total</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-secondary"></div>
+                            <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Allocated</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 relative z-10">
+                    <svg id="category-chart" class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 800 300">
+                        <!-- Grid lines -->
+                        <line stroke="#ffffff" stroke-opacity="0.06" x1="0" x2="800" y1="50" y2="50"></line>
+                        <line stroke="#ffffff" stroke-opacity="0.06" x1="0" x2="800" y1="125" y2="125"></line>
+                        <line stroke="#ffffff" stroke-opacity="0.06" x1="0" x2="800" y1="200" y2="200"></line>
+                        <line stroke="#ffffff" stroke-opacity="0.06" x1="0" x2="800" y1="275" y2="275"></line>
+                        <!-- Y-axis labels -->
+                        <text fill="#9CA3AF" font-family="monospace" font-size="10" x="0" y="54">Max</text>
+                        <text fill="#9CA3AF" font-family="monospace" font-size="10" x="0" y="162">Mid</text>
+                        <text fill="#9CA3AF" font-family="monospace" font-size="10" x="0" y="270">0</text>
+                        
+                        <g id="category-chart-content"></g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Idle Assets -->
+            <div class="glass-panel rounded-xl flex flex-col h-[400px]">
+                <div class="px-6 py-5 border-b border-surface-border flex justify-between items-center">
+                    <h3 class="text-sm font-semibold text-text-main flex items-center gap-2">
+                        Idle Assets (Nearing Review)
+                        <span class="material-symbols-outlined text-[16px] text-warning">warning</span>
+                    </h3>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
+                    {% for a in nearing_retirement %}
+                    <div class="flex items-center justify-between p-3 hover:bg-surface-highlight rounded-lg transition-colors group cursor-pointer border border-transparent hover:border-surface-border">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-surface border border-surface-border flex items-center justify-center text-text-muted">
+                                <span class="material-symbols-outlined text-[16px]">inventory_2</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-text-main group-hover:text-warning transition-colors">{{ a.name }}</p>
+                                <p class="font-mono text-xs text-text-muted mt-0.5">{{ a.asset_tag }} • {{ a.category.name }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-mono text-xs font-semibold text-text-main block">{{ a.condition }}</span>
+                            <span class="text-[9px] font-semibold text-text-muted uppercase tracking-wider">{{ a.acquisition_date|date:"Y-m-d" }}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-6 text-center text-text-muted text-sm h-full flex items-center justify-center">No idle assets found.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="h-8"></div>
+    </main>
 </div>
-<p class="text-muted small mt-3">Utilization trends and a booking heatmap (per the brief's Reports screen) are natural next additions once there's enough booking/allocation volume to chart — the raw data (Booking, Allocation) is all there, this page just doesn't aggregate it into a time series yet.</p>
-{% endblock %}
+
+<!-- Embedded JSON Data for Dynamic Chart Render -->
+<script id="reports-data" type="application/json">
+  {
+    "by_category": {
+      {% for name, d in by_category.items %}
+        "{{ name|escapejs }}": { "total": {{ d.total }}, "allocated": {{ d.allocated }} }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    },
+    "by_department": {
+      {% for name, count in by_department.items %}
+        "{{ name|escapejs }}": {{ count }}{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    },
+    "most_maintained": [
+      {% for tag, count in most_maintained %}
+        { "tag": "{{ tag|escapejs }}", "count": {{ count }} }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    "nearing_retirement": [
+      {% for a in nearing_retirement %}
+        { "tag": "{{ a.asset_tag|escapejs }}", "name": "{{ a.name|escapejs }}", "date": "{{ a.acquisition_date|date:'Y-m-d' }}" }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const rawData = document.getElementById('reports-data').textContent;
+    if (!rawData.trim()) return;
+    
+    const data = JSON.parse(rawData);
+    
+    // --- 1. Populate KPI Metrics ---
+    let totalAssets = 0;
+    let totalAllocated = 0;
+    
+    Object.values(data.by_category).forEach(cat => {
+      totalAssets += cat.total;
+      totalAllocated += cat.allocated;
+    });
+    
+    const allocationRate = totalAssets > 0 ? Math.round((totalAllocated / totalAssets) * 100) : 0;
+    
+    let maxMaintenance = 0;
+    data.most_maintained.forEach(item => {
+      if (item.count > maxMaintenance) maxMaintenance = item.count;
+    });
+    
+    document.getElementById('kpi-total-assets').textContent = totalAssets.toLocaleString();
+    document.getElementById('kpi-allocation-rate').textContent = allocationRate + '%';
+    document.getElementById('kpi-top-maintenance').textContent = maxMaintenance;
+    document.getElementById('kpi-nearing-retirement').textContent = data.nearing_retirement.length;
+
+    // --- 2. Build Utilization by Department Area Chart ---
+    const deptData = data.by_department;
+    const depts = Object.keys(deptData);
+    const counts = Object.values(deptData);
+    
+    if (depts.length > 0) {
+      const maxCount = Math.max(...counts, 1);
+      const width = 800;
+      const height = 300;
+      const paddingX = 80;
+      const startY = 250;
+      
+      let points = [];
+      depts.forEach((dept, i) => {
+        const x = depts.length > 1 
+          ? paddingX + i * ((width - 2 * paddingX) / (depts.length - 1))
+          : width / 2;
+        const y = startY - (deptData[dept] / maxCount) * 180;
+        points.push({ x, y, name: dept, val: deptData[dept] });
+      });
+
+      const dynamicGroup = document.getElementById('chart-dynamic-content');
+      dynamicGroup.innerHTML = '';
+
+      let areaD = `M ${points[0].x},${startY} `;
+      let lineD = `M ${points[0].x},${points[0].y} `;
+      points.forEach((pt, i) => {
+        areaD += `L ${pt.x},${pt.y} `;
+        if (i > 0) {
+          lineD += `L ${pt.x},${pt.y} `;
+        }
+      });
+      areaD += `L ${points[points.length - 1].x},${startY} Z`;
+
+      dynamicGroup.innerHTML += `<path d="${areaD}" fill="url(#area-grad)"></path>`;
+      dynamicGroup.innerHTML += `<path d="${lineD}" fill="none" stroke="#819CFF" stroke-width="2"></path>`;
+
+      points.forEach(pt => {
+        dynamicGroup.innerHTML += `
+          <g class="group/point">
+            <circle class="chart-point transition-all" cx="${pt.x}" cy="${pt.y}" fill="#080A0D" r="5" stroke="#819CFF" stroke-width="2"></circle>
+            <g class="tooltip pointer-events-none opacity-0 group-hover/point:opacity-100 transition-all">
+              <rect fill="#12161C" height="24" rx="4" stroke="#ffffff" stroke-opacity="0.1" width="60" x="${pt.x - 30}" y="${pt.y - 35}"></rect>
+              <text fill="#F3F4F6" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="${pt.y - 20}">${pt.val} assets</text>
+            </g>
+          </g>
+          <text fill="#9CA3AF" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="295">${pt.name}</text>
+        `;
+      });
+    } else {
+      document.getElementById('chart-dynamic-content').innerHTML = `
+        <text fill="#9CA3AF" font-family="sans-serif" font-size="12" text-anchor="middle" x="400" y="150">No allocation data to display</text>
+      `;
+    }
+
+    // --- 3. Build Category Breakdown Line/Area Chart ---
+    const catData = data.by_category;
+    const categories = Object.keys(catData);
+    
+    if (categories.length > 0) {
+      const width = 800;
+      const paddingX = 80;
+      const startY = 250;
+      
+      let maxCatVal = 1;
+      categories.forEach(cat => {
+        const val = catData[cat].total;
+        if (val > maxCatVal) maxCatVal = val;
+      });
+
+      let totalPoints = [];
+      let allocatedPoints = [];
+      
+      categories.forEach((cat, i) => {
+        const x = categories.length > 1
+          ? paddingX + i * ((width - 2 * paddingX) / (categories.length - 1))
+          : width / 2;
+        
+        const yTotal = startY - (catData[cat].total / maxCatVal) * 180;
+        const yAlloc = startY - (catData[cat].allocated / maxCatVal) * 180;
+        
+        totalPoints.push({ x, y: yTotal, val: catData[cat].total, name: cat });
+        allocatedPoints.push({ x, y: yAlloc, val: catData[cat].allocated, name: cat });
+      });
+
+      const catGroup = document.getElementById('category-chart-content');
+      catGroup.innerHTML = '';
+
+      // Draw Total Line (Blue)
+      let lineTotalD = `M ${totalPoints[0].x},${totalPoints[0].y} `;
+      totalPoints.forEach((pt, i) => { if (i > 0) lineTotalD += `L ${pt.x},${pt.y} `; });
+      catGroup.innerHTML += `<path d="${lineTotalD}" fill="none" stroke="#819CFF" stroke-dasharray="4,4" stroke-width="2"></path>`;
+
+      // Draw Allocated Line (Green)
+      let lineAllocD = `M ${allocatedPoints[0].x},${allocatedPoints[0].y} `;
+      allocatedPoints.forEach((pt, i) => { if (i > 0) lineAllocD += `L ${pt.x},${pt.y} `; });
+      catGroup.innerHTML += `<path d="${lineAllocD}" fill="none" stroke="#4ADE80" stroke-width="2"></path>`;
+
+      // Draw Points & Labels
+      totalPoints.forEach((pt, idx) => {
+        const apt = allocatedPoints[idx];
+        catGroup.innerHTML += `
+          <g class="group/point">
+            <circle class="chart-point transition-all" cx="${pt.x}" cy="${pt.y}" fill="#080A0D" r="4" stroke="#819CFF" stroke-width="2"></circle>
+            <g class="tooltip pointer-events-none opacity-0 group-hover/point:opacity-100 transition-all">
+              <rect fill="#12161C" height="24" rx="4" stroke="#ffffff" stroke-opacity="0.1" width="60" x="${pt.x - 30}" y="${pt.y - 35}"></rect>
+              <text fill="#F3F4F6" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="${pt.y - 20}">Total: ${pt.val}</text>
+            </g>
+          </g>
+          <g class="group/point">
+            <circle class="chart-point transition-all" cx="${apt.x}" cy="${apt.y}" fill="#080A0D" r="4" stroke="#4ADE80" stroke-width="2"></circle>
+            <g class="tooltip pointer-events-none opacity-0 group-hover/point:opacity-100 transition-all">
+              <rect fill="#12161C" height="24" rx="4" stroke="#ffffff" stroke-opacity="0.1" width="70" x="${apt.x - 35}" y="${apt.y - 35}"></rect>
+              <text fill="#F3F4F6" font-family="sans-serif" font-size="10" text-anchor="middle" x="${apt.x}" y="${apt.y - 20}">Allocated: ${apt.val}</text>
+            </g>
+          </g>
+          <text fill="#9CA3AF" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="295">${pt.name}</text>
+        `;
+      });
+    } else {
+      document.getElementById('category-chart-content').innerHTML = `
+        <text fill="#9CA3AF" font-family="sans-serif" font-size="12" text-anchor="middle" x="400" y="150">No category data to display</text>
+      `;
+    }
+  });
+</script>
+</body>
+</html>
