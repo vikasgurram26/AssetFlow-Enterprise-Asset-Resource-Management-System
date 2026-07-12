@@ -1,22 +1,360 @@
-{% extends "core/base.html" %}
+{% load static %}
 {% load core_extras %}
-{% block page_title %}Audit cycles{% endblock %}
-{% block topbar_actions %}{% if can_manage %}<a href="{% url 'audit_create' %}" class="btn btn-primary btn-sm">Create audit cycle</a>{% endif %}{% endblock %}
-{% block content %}
-<div class="card-clean">
-  <table class="data w-100 mb-0">
-    <thead><tr><th>Name</th><th>Scope</th><th>Dates</th><th>Auditors</th><th>Status</th></tr></thead>
-    <tbody>
-      {% for c in cycles %}
-      <tr onclick="window.location='{% url 'audit_detail' c.pk %}'" style="cursor:pointer">
-        <td>{{ c.name }}</td>
-        <td>{{ c.scope_department|default:"" }}{% if c.scope_location %} {{ c.scope_location }}{% endif %}{% if not c.scope_department and not c.scope_location %}All{% endif %}</td>
-        <td>{{ c.date_start }} – {{ c.date_end }}</td>
-        <td>{{ c.auditors.count }}</td>
-        <td><span class="pill {{ c.status|status_pill }}">{{ c.get_status_display }}</span></td>
-      </tr>
-      {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No audit cycles yet.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audit Cycles - AssetFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#141c27",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-primary": "#002780",
+                    "surface-container-lowest": "#070f19",
+                    "surface-bright": "#323a46",
+                    "surface-tint": "#b6c4ff",
+                    "on-surface": "#dbe3f3",
+                    "tertiary-container": "#bd8a20",
+                    "on-primary-container": "#002376",
+                    "secondary": "#51df9c",
+                    "tertiary-fixed": "#ffdea9",
+                    "outline-variant": "#444653",
+                    "on-primary-fixed": "#001550",
+                    "surface-container-highest": "#2d3541",
+                    "on-error": "#690005",
+                    "surface-container-high": "#222a36",
+                    "primary": "#b6c4ff",
+                    "on-secondary-container": "#003b24",
+                    "on-primary-fixed-variant": "#0d3bad",
+                    "on-tertiary-fixed": "#271900",
+                    "on-surface-variant": "#c4c5d5",
+                    "tertiary": "#f7bd51",
+                    "primary-container": "#6c8cff",
+                    "on-tertiary": "#422c00",
+                    "inverse-surface": "#dbe3f3",
+                    "error": "#ffb4ab",
+                    "primary-fixed": "#dce1ff",
+                    "on-secondary-fixed": "#002112",
+                    "surface-dim": "#0c141f",
+                    "on-background": "#dbe3f3",
+                    "on-tertiary-fixed-variant": "#5e4100",
+                    "surface-container": "#18202c",
+                    "surface-variant": "#2d3541",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#51df9c",
+                    "on-secondary-fixed-variant": "#005233",
+                    "inverse-primary": "#3255c6",
+                    "secondary-container": "#00b173",
+                    "outline": "#8e909f",
+                    "secondary-fixed": "#71fcb6",
+                    "on-secondary": "#003822",
+                    "surface": "#0c141f",
+                    "on-tertiary-container": "#3c2800",
+                    "inverse-on-surface": "#29313d",
+                    "tertiary-fixed-dim": "#f7bd51",
+                    "background": "#0c141f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "sm": "8px",
+                    "md": "12px",
+                    "lg": "16px",
+                    "xxl": "32px",
+                    "gutter": "16px",
+                    "margin-desktop": "32px",
+                    "xl": "24px",
+                    "xs": "4px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "body-base": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "mono-tabular": ["Inter"],
+                    "body-bold": ["Inter"],
+                    "display-lg-mobile": ["Inter"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #0E0F12;
+            color: #dbe3f3;
+        }
+        
+        .hairline-border {
+            border-color: #2A2C33;
+            border-width: 1px;
+        }
+
+        .surface-bg {
+            background-color: #17181C;
+        }
+
+        .raised-bg {
+            background-color: #1F2126;
+        }
+        
+        .accent-highlight {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        .primary-btn {
+            background-color: #6C8CFF;
+            color: #0E0F12;
+        }
+
+        .secondary-btn {
+            background-color: #17181C;
+            border-color: #2A2C33;
+            border-width: 1px;
+            color: #c4c5d5;
+        }
+        
+        /* Pills & Status styles */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 8px;
+            border-radius: 2px;
+            height: 20px;
+        }
+        
+        .pill.pill-ok {
+            background-color: #122A22;
+            color: #3ECF8E;
+            border: 1px solid rgba(62, 207, 142, 0.15);
+        }
+        
+        .pill.pill-warn {
+            background-color: #2B2212;
+            color: #F2B94D;
+            border: 1px solid rgba(242, 185, 77, 0.15);
+        }
+        
+        .pill.pill-danger {
+            background-color: #2C1418;
+            color: #F0576B;
+            border: 1px solid rgba(240, 87, 107, 0.15);
+        }
+        
+        .pill.pill-muted {
+            background-color: #1C1E24;
+            color: #8e909f;
+            border: 1px solid rgba(142, 144, 159, 0.15);
+        }
+
+        .pill.pill-info {
+            background-color: #14223A;
+            color: #6C8CFF;
+            border: 1px solid rgba(108, 140, 255, 0.15);
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #2D3541;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #444653;
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base h-screen overflow-hidden flex bg-background antialiased">
+
+<!-- SideNavBar -->
+<aside class="w-[220px] bg-[#12141C] border-r border-[#2A2C33] flex flex-col h-screen fixed left-0 top-0 z-30">
+    <!-- Brand -->
+    <div class="h-[56px] px-xl flex items-center border-b border-[#2A2C33]">
+        <span class="material-symbols-outlined text-primary mr-sm text-[24px]">grid_view</span>
+        <span class="font-bold text-[15px] tracking-tight text-on-surface">AssetFlow</span>
+    </div>
+    <!-- Nav Items -->
+    <div class="flex-1 py-lg space-y-[2px] px-md overflow-y-auto custom-scroll">
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            <span class="text-[13px] font-medium">Dashboard</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[20px]">domain</span>
+            <span class="text-[13px] font-medium">Organization</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+            <span class="text-[13px] font-medium">Assets</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[20px]">sync_alt</span>
+            <span class="text-[13px] font-medium">Allocation</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+            <span class="text-[13px] font-medium">Booking</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'maintenance_list' %}">
+            <span class="material-symbols-outlined text-[20px]">build</span>
+            <span class="text-[13px] font-medium">Maintenance</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface bg-[#1F2126] border-l-[3px] border-l-primary-container transition-colors gap-md" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[20px] text-primary" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+            <span class="text-[13px] font-semibold">Audit</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined text-[20px]">analytics</span>
+            <span class="text-[13px] font-medium">Reports</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="text-[13px] font-medium">Notifications</span>
+        </a>
+    </div>
+    <!-- Footer Profile -->
+    <div class="p-lg border-t border-[#2A2C33] flex flex-col gap-md">
+        {% if can_manage %}
+        <a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-[12px] h-[36px] rounded flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Register Asset
+        </a>
+        {% endif %}
+        
+        <div class="flex items-center gap-md pt-xs">
+            <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold text-xs">
+                {{ request.user.username|slice:":2"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="text-[11px] text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="text-on-surface-variant hover:text-error transition-colors p-1 flex items-center bg-transparent border-0 cursor-pointer" title="Sign Out">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<!-- TopNavBar -->
+<header class="h-[56px] fixed top-0 right-0 left-[220px] z-20 bg-[#12141C] border-b border-[#2A2C33] flex items-center justify-between px-xl w-auto">
+    <div class="flex items-center gap-md flex-1">
+        <h1 class="text-[14px] font-bold text-on-surface">Auditing &amp; Verification</h1>
+    </div>
+</header>
+
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-[220px] mt-[56px] flex flex-col h-[calc(100vh-56px)] bg-[#0E0F12] relative overflow-hidden">
+    
+    <!-- Sub-Header -->
+    <div class="px-xl py-lg flex items-center justify-between shrink-0 bg-[#12141C] border-b border-[#2A2C33]">
+        <div>
+            <h2 class="font-display-lg text-[20px] font-bold text-on-surface">Audit Cycles</h2>
+            <p class="text-on-surface-variant text-[13px] mt-1">Track physical inventory validation, discrepancy resolution, and compliance states.</p>
+        </div>
+        <div>
+            {% if can_manage %}
+            <a href="{% url 'audit_create' %}" class="bg-[#6C8CFF] text-[#0E0F12] hover:bg-[#5a7bed] transition-colors px-4 h-[36px] rounded font-body-bold text-[13px] flex items-center gap-xs shadow-[0_4px_12px_rgba(108,140,255,0.15)]">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Create Audit Cycle
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="flex-grow overflow-y-auto custom-scroll p-xl">
+        <div class="max-w-[1440px] mx-auto w-full flex flex-col gap-lg">
+            
+            <div class="surface-bg border hairline-border rounded flex flex-col overflow-hidden accent-highlight">
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#0E0F12] border-b hairline-border">
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-3 px-md">Audit Cycle Name</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-3 px-md">Scope Details</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-3 px-md">Cycle Dates</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-3 px-md">Auditor Pool</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-3 px-md">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-body-base text-body-base">
+                            {% for c in cycles %}
+                            <tr onclick="window.location='{% url 'audit_detail' c.pk %}'" class="border-b hairline-border hover:bg-[#1F2126] transition-colors h-[54px] cursor-pointer">
+                                <td class="px-md">
+                                    <div class="font-semibold text-on-surface">{{ c.name }}</div>
+                                </td>
+                                <td class="px-md text-on-surface-variant">
+                                    {% if c.scope_department or c.scope_location %}
+                                        <div class="flex flex-col">
+                                            {% if c.scope_department %}<span class="text-xs">{{ c.scope_department }}</span>{% endif %}
+                                            {% if c.scope_location %}<span class="text-[11px] opacity-75 font-mono">{{ c.scope_location }}</span>{% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-xs text-outline">All Departments &amp; Locations</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-md font-mono-tabular text-xs text-on-surface-variant">
+                                    {{ c.date_start|date:"M d, Y" }} &mdash; {{ c.date_end|date:"M d, Y" }}
+                                </td>
+                                <td class="px-md text-on-surface-variant text-xs">
+                                    <div class="flex items-center gap-xs">
+                                        <span class="material-symbols-outlined text-[16px] text-outline">group</span>
+                                        <span>{{ c.auditors.count }} assigned</span>
+                                    </div>
+                                </td>
+                                <td class="px-md">
+                                    <span class="pill {{ c.status|status_pill }}">{{ c.get_status_display }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-on-surface-variant py-8 bg-[#17181C]/30 text-xs">
+                                    No audit cycles defined yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-md border-t hairline-border flex justify-between items-center bg-[#17181C]">
+                    <span class="font-mono-tabular text-xs text-outline">Total Cycles: {{ cycles.count }}</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

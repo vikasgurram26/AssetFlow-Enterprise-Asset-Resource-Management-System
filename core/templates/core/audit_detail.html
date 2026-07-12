@@ -1,59 +1,540 @@
-{% extends "core/base.html" %}
+{% load static %}
 {% load core_extras %}
-{% block page_title %}{{ cycle.name }}{% endblock %}
-{% block topbar_actions %}
-  {% if can_close and cycle.status == "OPEN" %}
-  <form method="post" action="{% url 'audit_close' cycle.pk %}" onsubmit="return confirm('Close this audit cycle? Missing items will be marked Lost.');">
-    {% csrf_token %}<button class="btn btn-sm btn-primary">Close audit cycle</button>
-  </form>
-  {% endif %}
-{% endblock %}
-{% block content %}
-<div class="card-clean p-3 mb-3">
-  <span class="pill {{ cycle.status|status_pill }}">{{ cycle.get_status_display }}</span>
-  <span class="text-muted small ms-2">{{ cycle.date_start }} – {{ cycle.date_end }} &middot; Auditors: {% for a in cycle.auditors.all %}{{ a }}{% if not forloop.last %}, {% endif %}{% empty %}none assigned{% endfor %}</span>
-</div>
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audit Details &mdash; {{ cycle.name }} - AssetFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#141c27",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-primary": "#002780",
+                    "surface-container-lowest": "#070f19",
+                    "surface-bright": "#323a46",
+                    "surface-tint": "#b6c4ff",
+                    "on-surface": "#dbe3f3",
+                    "tertiary-container": "#bd8a20",
+                    "on-primary-container": "#002376",
+                    "secondary": "#51df9c",
+                    "tertiary-fixed": "#ffdea9",
+                    "outline-variant": "#444653",
+                    "on-primary-fixed": "#001550",
+                    "surface-container-highest": "#2d3541",
+                    "on-error": "#690005",
+                    "surface-container-high": "#222a36",
+                    "primary": "#b6c4ff",
+                    "on-secondary-container": "#003b24",
+                    "on-primary-fixed-variant": "#0d3bad",
+                    "on-tertiary-fixed": "#271900",
+                    "on-surface-variant": "#c4c5d5",
+                    "tertiary": "#f7bd51",
+                    "primary-container": "#6c8cff",
+                    "on-tertiary": "#422c00",
+                    "inverse-surface": "#dbe3f3",
+                    "error": "#ffb4ab",
+                    "primary-fixed": "#dce1ff",
+                    "on-secondary-fixed": "#002112",
+                    "surface-dim": "#0c141f",
+                    "on-background": "#dbe3f3",
+                    "on-tertiary-fixed-variant": "#5e4100",
+                    "surface-container": "#18202c",
+                    "surface-variant": "#2d3541",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#51df9c",
+                    "on-secondary-fixed-variant": "#005233",
+                    "inverse-primary": "#3255c6",
+                    "secondary-container": "#00b173",
+                    "outline": "#8e909f",
+                    "secondary-fixed": "#71fcb6",
+                    "on-secondary": "#003822",
+                    "surface": "#0c141f",
+                    "on-tertiary-container": "#3c2800",
+                    "inverse-on-surface": "#29313d",
+                    "tertiary-fixed-dim": "#f7bd51",
+                    "background": "#0c141f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "sm": "8px",
+                    "md": "12px",
+                    "lg": "16px",
+                    "xxl": "32px",
+                    "gutter": "16px",
+                    "margin-desktop": "32px",
+                    "xl": "24px",
+                    "xs": "4px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "body-base": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "mono-tabular": ["Inter"],
+                    "body-bold": ["Inter"],
+                    "display-lg-mobile": ["Inter"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { background-color: #0E0F12; color: #dbe3f3; }
+        .hairline-border { border-color: #2A2C33; border-width: 1px; }
+        .surface-bg { background-color: #17181C; }
+        .raised-bg { background-color: #1F2126; }
+        .accent-highlight { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+        .primary-btn { background-color: #6C8CFF; color: #0E0F12; }
+        .secondary-btn { background-color: #17181C; border-color: #2A2C33; border-width: 1px; color: #c4c5d5; }
+        
+        .status-pill-available { background-color: #122A22; color: #3ECF8E; border: 1px solid rgba(62, 207, 142, 0.15); }
+        .status-pill-pending { background-color: #2B2212; color: #F2B94D; border: 1px solid rgba(242, 185, 77, 0.15); }
+        .status-pill-danger { background-color: #2C1418; color: #F0576B; border: 1px solid rgba(240, 87, 107, 0.15); }
+        .status-pill-muted { background-color: #1C1E24; color: #8e909f; border: 1px solid rgba(142, 144, 159, 0.15); }
 
-{% if discrepancies %}
-<div class="card-clean p-3 mb-3" style="border-color:#f0997b">
-  <div class="section-head mb-2"><h2 class="text-danger">Discrepancy report ({{ discrepancies.count }})</h2></div>
-  <table class="data w-100 mb-0">
-    <thead><tr><th>Asset</th><th>Result</th><th>Notes</th></tr></thead>
-    <tbody>
-      {% for item in discrepancies %}
-      <tr><td>{{ item.asset }}</td><td><span class="pill {{ item.result|status_pill }}">{{ item.get_result_display }}</span></td><td>{{ item.notes }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
+        .segmented-control-bg { background-color: #0E0F12; }
+        .segmented-btn { color: #8e909f; }
+        .segmented-btn.active-verified { background-color: #122A22; color: #3ECF8E; box-shadow: inset 0 0 0 1px rgba(62, 207, 142, 0.3); }
+        .segmented-btn.active-missing { background-color: #2B2212; color: #F2B94D; box-shadow: inset 0 0 0 1px rgba(242, 185, 77, 0.3); }
+        .segmented-btn.active-damaged { background-color: #2C1418; color: #F0576B; box-shadow: inset 0 0 0 1px rgba(240, 87, 107, 0.3); }
 
-<div class="card-clean">
-  <table class="data w-100 mb-0">
-    <thead><tr><th>Asset</th><th>Result</th><th>Notes</th>{% if can_mark and cycle.status == "OPEN" %}<th>Mark</th>{% endif %}</tr></thead>
-    <tbody>
-      {% for item in items %}
-      <tr>
-        <td>{{ item.asset.asset_tag }} — {{ item.asset.name }}</td>
-        <td><span class="pill {{ item.result|status_pill }}">{{ item.get_result_display }}</span></td>
-        <td>{{ item.notes }}</td>
-        {% if can_mark and cycle.status == "OPEN" %}
-        <td>
-          <form method="post" action="{% url 'audit_item_mark' item.pk %}" style="display:flex;gap:4px;align-items:center">
-            {% csrf_token %}
-            <select name="result" class="form-select form-select-sm" style="width:110px">
-              <option value="VERIFIED">Verified</option>
-              <option value="MISSING">Missing</option>
-              <option value="DAMAGED">Damaged</option>
-            </select>
-            <input type="text" name="notes" placeholder="Notes" class="form-control form-control-sm" style="width:140px">
-            <button class="btn btn-sm btn-outline-secondary">Save</button>
-          </form>
-        </td>
+        /* Pills & Status styles */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 8px;
+            border-radius: 2px;
+            height: 20px;
+        }
+        
+        .pill.pill-ok {
+            background-color: #122A22;
+            color: #3ECF8E;
+            border: 1px solid rgba(62, 207, 142, 0.15);
+        }
+        
+        .pill.pill-warn {
+            background-color: #2B2212;
+            color: #F2B94D;
+            border: 1px solid rgba(242, 185, 77, 0.15);
+        }
+        
+        .pill.pill-danger {
+            background-color: #2C1418;
+            color: #F0576B;
+            border: 1px solid rgba(240, 87, 107, 0.15);
+        }
+        
+        .pill.pill-muted {
+            background-color: #1C1E24;
+            color: #8e909f;
+            border: 1px solid rgba(142, 144, 159, 0.15);
+        }
+
+        .pill.pill-info {
+            background-color: #14223A;
+            color: #6C8CFF;
+            border: 1px solid rgba(108, 140, 255, 0.15);
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #2D3541;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #444653;
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base h-screen overflow-hidden flex bg-background antialiased">
+
+<!-- SideNavBar -->
+<aside class="w-[220px] bg-[#12141C] border-r border-[#2A2C33] flex flex-col h-screen fixed left-0 top-0 z-30">
+    <!-- Brand -->
+    <div class="h-[56px] px-xl flex items-center border-b border-[#2A2C33]">
+        <span class="material-symbols-outlined text-primary mr-sm text-[24px]">grid_view</span>
+        <span class="font-bold text-[15px] tracking-tight text-on-surface">AssetFlow</span>
+    </div>
+    <!-- Nav Items -->
+    <div class="flex-1 py-lg space-y-[2px] px-md overflow-y-auto custom-scroll">
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'dashboard' %}">
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            <span class="text-[13px] font-medium">Dashboard</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'org_setup' %}">
+            <span class="material-symbols-outlined text-[20px]">domain</span>
+            <span class="text-[13px] font-medium">Organization</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'asset_list' %}">
+            <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+            <span class="text-[13px] font-medium">Assets</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'transfer_list' %}">
+            <span class="material-symbols-outlined text-[20px]">sync_alt</span>
+            <span class="text-[13px] font-medium">Allocation</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'booking_list' %}">
+            <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+            <span class="text-[13px] font-medium">Booking</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'maintenance_list' %}">
+            <span class="material-symbols-outlined text-[20px]">build</span>
+            <span class="text-[13px] font-medium">Maintenance</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface bg-[#1F2126] border-l-[3px] border-l-primary-container transition-colors gap-md" href="{% url 'audit_list' %}">
+            <span class="material-symbols-outlined text-[20px] text-primary" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+            <span class="text-[13px] font-semibold">Audit</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'reports' %}">
+            <span class="material-symbols-outlined text-[20px]">analytics</span>
+            <span class="text-[13px] font-medium">Reports</span>
+        </a>
+        <a class="flex items-center px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C1E24] transition-colors gap-md" href="{% url 'notification_list' %}">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="text-[13px] font-medium">Notifications</span>
+        </a>
+    </div>
+    <!-- Footer Profile -->
+    <div class="p-lg border-t border-[#2A2C33] flex flex-col gap-md">
+        {% if can_manage %}
+        <a href="{% url 'asset_create' %}" class="w-full bg-primary-container text-on-primary-container font-body-bold text-[12px] h-[36px] rounded flex items-center justify-center gap-sm hover:bg-primary transition-all active:scale-95 shadow-[0_4px_12px_rgba(108,140,255,0.2)]">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Register Asset
+        </a>
         {% endif %}
-      </tr>
-      {% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No assets in scope.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endblock %}
+        
+        <div class="flex items-center gap-md pt-xs">
+            <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-[#0E0F12] font-bold text-xs">
+                {{ request.user.username|slice:":2"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-bold text-on-surface truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="text-[11px] text-on-surface-variant truncate opacity-70">{{ request.user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="text-on-surface-variant hover:text-error transition-colors p-1 flex items-center bg-transparent border-0 cursor-pointer" title="Sign Out">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<!-- TopNavBar -->
+<header class="h-[56px] fixed top-0 right-0 left-[220px] z-20 bg-[#12141C] border-b border-[#2A2C33] flex items-center justify-between px-xl w-auto">
+    <div class="flex items-center gap-md flex-1">
+        <a href="{% url 'audit_list' %}" class="text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span class="text-xs font-semibold">Back to Audits</span>
+        </a>
+        <div class="w-[1px] h-[16px] bg-[#2A2C33] mx-sm"></div>
+        <h1 class="text-[14px] font-bold text-on-surface">Audit Workspace</h1>
+    </div>
+</header>
+
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-[220px] mt-[56px] flex flex-col h-[calc(100vh-56px)] bg-[#0E0F12] relative overflow-hidden">
+    
+    <!-- Audit Header Dashboard Card -->
+    <div class="px-xl py-lg shrink-0 bg-[#12141C] border-b border-[#2A2C33]">
+        <div class="max-w-[1440px] mx-auto w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-lg surface-bg p-lg rounded border hairline-border accent-highlight">
+            <div>
+                <div class="flex items-center gap-sm mb-xs">
+                    {% if cycle.status == 'OPEN' %}
+                    <span class="status-pill-pending font-label-caps text-label-caps px-2 py-0.5 rounded-sm uppercase tracking-wider">In Progress</span>
+                    {% else %}
+                    <span class="status-pill-danger font-label-caps text-label-caps px-2 py-0.5 rounded-sm uppercase tracking-wider">Closed</span>
+                    {% endif %}
+                    <span class="font-mono-tabular text-mono-tabular text-outline">Cycle: {{ cycle.name }}</span>
+                </div>
+                <h2 class="font-display-lg text-display-lg text-on-surface tracking-tight">{{ cycle.name }}</h2>
+                <div class="flex flex-wrap items-center gap-lg mt-md">
+                    <div class="flex items-center gap-sm">
+                        <span class="material-symbols-outlined text-outline text-[16px]">group</span>
+                        <span class="font-body-base text-body-base text-on-surface-variant">Auditors:</span>
+                        <div class="flex -space-x-1.5 ml-xs">
+                            {% for a in cycle.auditors.all %}
+                            <div class="w-6 h-6 rounded-full border border-[#17181C] bg-[#6C8CFF] text-[#0E0F12] font-bold text-[9px] flex items-center justify-center" title="{{ a.get_full_name|default:a.username }}">
+                                {{ a.username|slice:":2"|upper }}
+                            </div>
+                            {% empty %}
+                            <span class="text-xs text-outline italic">None assigned</span>
+                            {% endfor %}
+                        </div>
+                        <span class="font-body-base text-body-base text-on-surface font-medium ml-xs text-xs">
+                            {% for a in cycle.auditors.all %}{{ a }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-sm">
+                        <span class="material-symbols-outlined text-outline text-[16px]">schedule</span>
+                        <span class="font-body-base text-body-base text-on-surface-variant text-xs">Started: {{ cycle.date_start|date:"M d, Y" }} &middot; Ends: {{ cycle.date_end|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-end gap-sm w-full md:w-auto">
+                <div class="flex items-center gap-sm w-full md:w-64">
+                    <div class="w-full bg-[#0E0F12] rounded-full h-1.5 border hairline-border overflow-hidden">
+                        <div id="dynamicProgressWidth" class="bg-primary h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="dynamicProgressText" class="font-mono-tabular text-mono-tabular text-on-surface">0%</span>
+                </div>
+                
+                {% if can_close and cycle.status == "OPEN" %}
+                <form method="post" action="{% url 'audit_close' cycle.pk %}" onsubmit="return confirm('Close this audit cycle? Missing items will be marked Lost.');" class="w-full md:w-auto">
+                    {% csrf_token %}
+                    <button class="primary-btn h-[36px] px-lg rounded font-body-bold text-body-bold w-full md:w-auto hover:bg-[#8ba5ff] transition-all active:scale-95 duration-150 shadow-[0_0_15px_rgba(108,140,255,0.15)] flex items-center justify-center gap-sm">
+                        <span class="material-symbols-outlined text-[18px]">lock_open</span>
+                        Close Audit Cycle
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Scrollable Workspace content -->
+    <div class="flex-grow overflow-y-auto custom-scroll p-xl flex flex-col gap-lg">
+        <div class="max-w-[1440px] mx-auto w-full flex flex-col gap-lg">
+            
+            <!-- Discrepancy report section (dynamic alert grid) -->
+            {% if discrepancies %}
+            <div class="surface-bg border border-error/20 rounded p-lg accent-highlight flex flex-col gap-md">
+                <div class="flex items-center justify-between border-b border-[#2A2C33] pb-sm">
+                    <h3 class="text-error font-body-bold text-body-bold flex items-center gap-sm">
+                        <span class="material-symbols-outlined text-[20px]">warning</span>
+                        Discrepancy Report ({{ discrepancies.count }})
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#0E0F12] border-b hairline-border">
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-2 px-md">Asset</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-2 px-md">Result</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-2 px-md">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-body-base text-body-base">
+                            {% for item in discrepancies %}
+                            <tr class="border-b border-[#2A2C33]/50 hover:bg-[#1F2126] transition-colors">
+                                <td class="px-md py-sm">
+                                    <span class="font-mono-tabular text-primary font-semibold text-xs">{{ item.asset.asset_tag }}</span>
+                                    <span class="text-on-surface text-xs ml-sm">{{ item.asset.name }}</span>
+                                </td>
+                                <td class="px-md py-sm">
+                                    <span class="pill {{ item.result|status_pill }}">{{ item.get_result_display }}</span>
+                                </td>
+                                <td class="px-md py-sm text-xs text-on-surface-variant">
+                                    {{ item.notes|default:"&mdash;" }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Data Table Container -->
+            <div class="surface-bg border hairline-border rounded flex flex-col overflow-hidden accent-highlight">
+                
+                <!-- Table Header Actions -->
+                <div class="p-md border-b hairline-border flex justify-between items-center bg-[#17181C]">
+                    <div class="relative w-64 focus-within:ring-1 focus-within:ring-primary rounded">
+                        <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[16px]">filter_list</span>
+                        <input id="tableFilter" class="w-full bg-[#0E0F12] border hairline-border rounded pl-8 pr-3 py-1 text-body-base font-body-base text-on-surface focus:outline-none focus:border-primary h-[28px] text-xs focus:ring-0 placeholder-outline-variant transition-colors" placeholder="Filter by tag or name..." type="text"/>
+                    </div>
+                    <div class="flex gap-sm">
+                        <button class="secondary-btn h-[28px] px-md rounded font-body-base text-xs flex items-center gap-xs hover:bg-surface-container-high transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>
+                            Scan Tag
+                        </button>
+                    </div>
+                </div>
+
+                <!-- High Density Table -->
+                <div class="overflow-x-auto">
+                    <table id="auditItemsTable" class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#0E0F12] border-b hairline-border">
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-2.5 px-md w-[40px]">#</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-2.5 px-md w-[250px]">Asset (Tag &amp; Name)</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-2.5 px-md w-[200px]">Expected Location</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-2.5 px-md w-[150px]">Last Check</th>
+                                <th class="font-label-caps text-label-caps text-outline uppercase tracking-wider py-2.5 px-md">Verification</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-body-base text-body-base">
+                            {% for item in items %}
+                            <tr class="border-b border-[#2A2C33]/50 hover:bg-[#1F2126] transition-colors h-[54px]" data-result="{{ item.result }}">
+                                <td class="px-md font-mono-tabular text-mono-tabular text-outline text-xs">{{ forloop.counter }}</td>
+                                <td class="px-md">
+                                    <div class="flex flex-col justify-center">
+                                        <span class="font-mono-tabular text-mono-tabular text-primary font-semibold text-xs">{{ item.asset.asset_tag }}</span>
+                                        <span class="text-on-surface text-xs truncate max-w-[240px]">{{ item.asset.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-md text-on-surface-variant text-xs">{{ item.asset.location|default:"Not specified" }}</td>
+                                <td class="px-md font-mono-tabular text-mono-tabular text-on-surface-variant text-xs">
+                                    {{ item.checked_at|date:"M d, H:i"|default:"Never checked" }}
+                                </td>
+                                <td class="px-md py-sm">
+                                    {% if can_mark and cycle.status == "OPEN" %}
+                                    <form method="post" action="{% url 'audit_item_mark' item.pk %}" class="flex items-center gap-sm">
+                                        {% csrf_token %}
+                                        
+                                        <!-- Segmented control selector -->
+                                        <div class="inline-flex rounded segmented-control-bg p-[2px] border border-[#2A2C33] h-[32px] shrink-0">
+                                            <button type="button" onclick="setAuditResult(this, 'VERIFIED')" 
+                                                    class="segmented-btn {% if item.result == 'VERIFIED' %}active-verified{% endif %} px-2.5 py-0.5 text-[11px] font-medium rounded-sm transition-all flex items-center gap-0.5">
+                                                <span class="material-symbols-outlined text-[13px]">check_circle</span>
+                                                Verified
+                                            </button>
+                                            <button type="button" onclick="setAuditResult(this, 'MISSING')" 
+                                                    class="segmented-btn {% if item.result == 'MISSING' %}active-missing{% endif %} px-2.5 py-0.5 text-[11px] font-medium rounded-sm transition-all flex items-center gap-0.5">
+                                                <span class="material-symbols-outlined text-[13px]">help</span>
+                                                Missing
+                                            </button>
+                                            <button type="button" onclick="setAuditResult(this, 'DAMAGED')" 
+                                                    class="segmented-btn {% if item.result == 'DAMAGED' %}active-damaged{% endif %} px-2.5 py-0.5 text-[11px] font-medium rounded-sm transition-all flex items-center gap-0.5">
+                                                <span class="material-symbols-outlined text-[13px]">warning</span>
+                                                Damaged
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Hidden result field to submit -->
+                                        <input type="hidden" name="result" value="{{ item.result }}">
+                                        
+                                        <!-- Notes input -->
+                                        <input type="text" name="notes" placeholder="Notes..." value="{{ item.notes }}" 
+                                               class="bg-[#0E0F12] border border-[#2A2C33] rounded px-2 text-xs text-on-surface focus:outline-none focus:border-primary placeholder-outline-variant h-[32px] w-[150px] focus:ring-0">
+                                        
+                                        <!-- Save button -->
+                                        <button type="submit" class="bg-[#1C1E24] border border-[#2A2C33] text-on-surface-variant hover:text-on-surface hover:border-[#6C8CFF] transition-all px-3.5 h-[32px] rounded text-xs font-semibold flex items-center justify-center">
+                                            Save
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <div class="flex items-center gap-md">
+                                        <span class="pill {{ item.result|status_pill }}">{{ item.get_result_display }}</span>
+                                        {% if item.notes %}
+                                        <span class="text-xs text-on-surface-variant italic truncate max-w-[200px]" title="{{ item.notes }}">"{{ item.notes }}"</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-on-surface-variant py-8 bg-[#17181C]/30 text-xs">
+                                    No assets in cycle scope.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Footer -->
+                <div class="p-md border-t hairline-border flex justify-between items-center bg-[#17181C]">
+                    <span class="font-mono-tabular text-xs text-outline">Total assets in scope: {{ items.count }}</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<script>
+    // Set validation result on segmented control and hidden input
+    function setAuditResult(button, resultVal) {
+        const container = button.parentNode;
+        const buttons = container.querySelectorAll('.segmented-btn');
+        buttons.forEach(btn => {
+            btn.classList.remove('active-verified', 'active-missing', 'active-damaged');
+        });
+        
+        if (resultVal === 'VERIFIED') {
+            button.classList.add('active-verified');
+        } else if (resultVal === 'MISSING') {
+            button.classList.add('active-missing');
+        } else if (resultVal === 'DAMAGED') {
+            button.classList.add('active-damaged');
+        }
+        
+        const form = container.closest('form');
+        const hiddenInput = form.querySelector('input[name="result"]');
+        hiddenInput.value = resultVal;
+    }
+
+    // Dynamic progress bar calculation
+    function updateProgress() {
+        const rows = document.querySelectorAll('#auditItemsTable tbody tr[data-result]');
+        const total = rows.length;
+        let completed = 0;
+        
+        rows.forEach(row => {
+            const res = row.getAttribute('data-result');
+            if (res && res !== 'PENDING') {
+                completed++;
+            }
+        });
+        
+        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+        
+        const bar = document.getElementById('dynamicProgressWidth');
+        const text = document.getElementById('dynamicProgressText');
+        if (bar) bar.style.width = percent + '%';
+        if (text) text.innerText = percent + '%';
+    }
+
+    // Client-side text filter
+    document.getElementById('tableFilter').addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#auditItemsTable tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            if (text.includes(query) || row.innerHTML.includes('colspan')) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    // Run progress update on load
+    window.addEventListener('DOMContentLoaded', updateProgress);
+</script>
+
+</body>
+</html>
