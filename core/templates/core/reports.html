@@ -334,10 +334,16 @@
 </script>
 
 <script>
+  function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
     const rawData = document.getElementById('reports-data').textContent;
     if (!rawData.trim()) return;
-    
+
     const data = JSON.parse(rawData);
     
     // --- 1. Populate KPI Metrics ---
@@ -407,7 +413,7 @@
               <text fill="#F3F4F6" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="${pt.y - 20}">${pt.val} assets</text>
             </g>
           </g>
-          <text fill="#9CA3AF" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="295">${pt.name}</text>
+          <text fill="#9CA3AF" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="295">${escapeHtml(pt.name)}</text>
         `;
       });
     } else {
@@ -477,7 +483,7 @@
               <text fill="#F3F4F6" font-family="sans-serif" font-size="10" text-anchor="middle" x="${apt.x}" y="${apt.y - 20}">Allocated: ${apt.val}</text>
             </g>
           </g>
-          <text fill="#9CA3AF" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="295">${pt.name}</text>
+          <text fill="#9CA3AF" font-family="sans-serif" font-size="10" text-anchor="middle" x="${pt.x}" y="295">${escapeHtml(pt.name)}</text>
         `;
       });
     } else {

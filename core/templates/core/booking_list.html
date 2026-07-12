@@ -378,6 +378,12 @@
     renderTimeline();
   });
 
+  function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+  }
+
   function renderTimeline() {
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     
@@ -447,16 +453,16 @@
       
       eventEl.innerHTML = `
         <div class="px-sm py-xs truncate h-full">
-          <span class="font-body-bold text-body-bold text-primary text-xs block truncate">${b.asset_name}</span>
-          <span class="font-mono-tabular text-mono-tabular text-on-surface-variant text-[10px] block truncate">${b.booked_by}</span>
+          <span class="font-body-bold text-body-bold text-primary text-xs block truncate">${escapeHtml(b.asset_name)}</span>
+          <span class="font-mono-tabular text-mono-tabular text-on-surface-variant text-[10px] block truncate">${escapeHtml(b.booked_by)}</span>
         </div>
         <!-- Tooltip -->
         <div class="tooltip-content bg-[#2d3541] border border-[#444653] shadow-lg rounded p-sm text-left">
-          <div class="font-body-bold text-body-bold text-on-surface mb-1">${b.asset_name}</div>
-          <div class="font-mono-tabular text-mono-tabular text-on-surface-variant mb-2">${startStr} - ${endStr}</div>
+          <div class="font-body-bold text-body-bold text-on-surface mb-1">${escapeHtml(b.asset_name)}</div>
+          <div class="font-mono-tabular text-mono-tabular text-on-surface-variant mb-2">${escapeHtml(startStr)} - ${escapeHtml(endStr)}</div>
           <div class="flex items-center gap-xs">
             <span class="material-symbols-outlined text-[14px] text-on-surface-variant">person</span>
-            <span class="font-body-base text-body-base text-on-surface-variant text-xs">${b.booked_by}</span>
+            <span class="font-body-base text-body-base text-on-surface-variant text-xs">${escapeHtml(b.booked_by)}</span>
           </div>
         </div>
       `;
