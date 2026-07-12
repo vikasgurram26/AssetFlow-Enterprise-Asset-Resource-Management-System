@@ -1,0 +1,70 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+{% block page_title %}Organization setup{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#departments">Departments</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#categories">Asset categories</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#employees">Employee directory</a></li>
+</ul>
+<div class="tab-content">
+
+  <div class="tab-pane fade show active" id="departments">
+    {% if can_manage %}<a href="{% url 'department_create' %}" class="btn btn-primary btn-sm mb-3">Add department</a>{% endif %}
+    <div class="card-clean">
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Name</th><th>Head</th><th>Parent</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for d in departments %}
+          <tr>
+            <td>{{ d.name }}</td><td>{{ d.head|default:"—" }}</td><td>{{ d.parent|default:"—" }}</td>
+            <td><span class="pill {{ d.status|status_pill }}">{{ d.get_status_display }}</span></td>
+            <td class="text-end">{% if can_manage %}<a href="{% url 'department_edit' d.pk %}" class="small">Edit</a>{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No departments yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="categories">
+    {% if can_manage %}<a href="{% url 'category_create' %}" class="btn btn-primary btn-sm mb-3">Add category</a>{% endif %}
+    <div class="card-clean">
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Name</th><th>Warranty period (days)</th><th>Description</th><th></th></tr></thead>
+        <tbody>
+          {% for c in categories %}
+          <tr>
+            <td>{{ c.name }}</td><td>{{ c.warranty_period_days|default:"—" }}</td><td>{{ c.description }}</td>
+            <td class="text-end">{% if can_manage %}<a href="{% url 'category_edit' c.pk %}" class="small">Edit</a>{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No categories yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="employees">
+    <p class="text-muted small">Roles are assigned here only — this is the sole place an Employee becomes a Department Head or Asset Manager.</p>
+    <div class="card-clean">
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Role</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for e in employees %}
+          <tr>
+            <td>{{ e.get_full_name|default:e.username }}</td><td>{{ e.email }}</td><td>{{ e.department|default:"—" }}</td>
+            <td><span class="pill pill-info">{{ e.get_role_display }}</span></td>
+            <td><span class="pill {{ e.status|status_pill }}">{{ e.status|title }}</span></td>
+            <td class="text-end">{% if can_manage %}<a href="{% url 'promote_employee' e.pk %}" class="small">Promote / assign role</a>{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No employees yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block extra_body %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

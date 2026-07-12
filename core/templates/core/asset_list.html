@@ -1,0 +1,35 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+{% block page_title %}Assets{% endblock %}
+{% block topbar_actions %}
+  {% if can_manage %}<a href="{% url 'asset_create' %}" class="btn btn-primary btn-sm">Register asset</a>{% endif %}
+{% endblock %}
+{% block content %}
+<form method="get" class="d-flex gap-2 mb-3">
+  <input type="text" name="q" placeholder="Search tag, serial, or name" class="form-control form-control-sm" style="width:240px" value="{{ request.GET.q }}">
+  <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+    <option value="">All statuses</option>
+    {% for value, label in statuses %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <select name="category" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+    <option value="">All categories</option>
+    {% for c in categories %}<option value="{{ c.pk }}" {% if request.GET.category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-sm btn-outline-secondary">Search</button>
+</form>
+<div class="card-clean">
+  <table class="data w-100 mb-0">
+    <thead><tr><th>Tag</th><th>Name</th><th>Category</th><th>Status</th><th>Department</th><th>Location</th><th>Bookable</th></tr></thead>
+    <tbody>
+      {% for a in assets %}
+      <tr onclick="window.location='{% url 'asset_detail' a.pk %}'" style="cursor:pointer">
+        <td>{{ a.asset_tag }}</td><td>{{ a.name }}</td><td>{{ a.category.name }}</td>
+        <td><span class="pill {{ a.status|status_pill }}">{{ a.get_status_display }}</span>{% if a.is_overdue %} <span class="pill pill-danger">Overdue</span>{% endif %}</td>
+        <td>{{ a.department|default:"—" }}</td><td>{{ a.location|default:"—" }}</td>
+        <td>{% if a.is_bookable %}Yes{% else %}—{% endif %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">No assets registered yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

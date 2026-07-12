@@ -1,0 +1,51 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+{% block page_title %}Dashboard{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'asset_create' %}" class="btn btn-sm btn-outline-secondary">Register asset</a>
+  <a href="{% url 'booking_create' %}" class="btn btn-sm btn-outline-secondary">Book resource</a>
+  <a href="{% url 'maintenance_create' %}" class="btn btn-sm btn-outline-secondary">Raise request</a>
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Available</div><div class="kpi-value">{{ kpis.available }}</div></div></div>
+  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Allocated</div><div class="kpi-value">{{ kpis.allocated }}</div></div></div>
+  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Maintenance today</div><div class="kpi-value">{{ kpis.maintenance_today }}</div></div></div>
+  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Active bookings</div><div class="kpi-value">{{ kpis.active_bookings }}</div></div></div>
+  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Pending transfers</div><div class="kpi-value">{{ kpis.pending_transfers }}</div></div></div>
+  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Upcoming returns</div><div class="kpi-value">{{ kpis.upcoming_returns }}</div></div></div>
+</div>
+
+{% if overdue %}
+<div class="card-clean p-3 mb-4" style="border-color:#f0997b">
+  <div class="section-head mb-2"><h2 class="text-danger">Overdue returns</h2></div>
+  <table class="data w-100 mb-0">
+    <thead><tr><th>Asset</th><th>Held by</th><th>Expected return</th></tr></thead>
+    <tbody>
+      {% for a in overdue %}
+      <tr><td><a href="{% url 'asset_detail' a.asset.pk %}">{{ a.asset }}</a></td><td>{{ a.employee|default:a.department }}</td><td class="text-danger">{{ a.expected_return_date }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card-clean p-3">
+      <div class="section-head"><h2>Recent activity</h2><a href="{% url 'activity_log' %}" class="small">View all</a></div>
+      {% for log in recent_activity %}
+        <div class="small mb-2"><strong>{{ log.user|default:"System" }}</strong> — {{ log.description }} <span class="text-muted">({{ log.created_at|timesince }} ago)</span></div>
+      {% empty %}<div class="text-muted small">No activity yet.</div>{% endfor %}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-clean p-3">
+      <div class="section-head"><h2>Upcoming returns</h2></div>
+      {% for a in upcoming_returns %}
+        <div class="small mb-2">{{ a.asset }} — {{ a.employee|default:a.department }} — due {{ a.expected_return_date }}</div>
+      {% empty %}<div class="text-muted small">Nothing due soon.</div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

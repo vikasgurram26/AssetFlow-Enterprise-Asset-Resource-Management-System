@@ -1,0 +1,59 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+{% block page_title %}{{ cycle.name }}{% endblock %}
+{% block topbar_actions %}
+  {% if can_close and cycle.status == "OPEN" %}
+  <form method="post" action="{% url 'audit_close' cycle.pk %}" onsubmit="return confirm('Close this audit cycle? Missing items will be marked Lost.');">
+    {% csrf_token %}<button class="btn btn-sm btn-primary">Close audit cycle</button>
+  </form>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="card-clean p-3 mb-3">
+  <span class="pill {{ cycle.status|status_pill }}">{{ cycle.get_status_display }}</span>
+  <span class="text-muted small ms-2">{{ cycle.date_start }} – {{ cycle.date_end }} &middot; Auditors: {% for a in cycle.auditors.all %}{{ a }}{% if not forloop.last %}, {% endif %}{% empty %}none assigned{% endfor %}</span>
+</div>
+
+{% if discrepancies %}
+<div class="card-clean p-3 mb-3" style="border-color:#f0997b">
+  <div class="section-head mb-2"><h2 class="text-danger">Discrepancy report ({{ discrepancies.count }})</h2></div>
+  <table class="data w-100 mb-0">
+    <thead><tr><th>Asset</th><th>Result</th><th>Notes</th></tr></thead>
+    <tbody>
+      {% for item in discrepancies %}
+      <tr><td>{{ item.asset }}</td><td><span class="pill {{ item.result|status_pill }}">{{ item.get_result_display }}</span></td><td>{{ item.notes }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="card-clean">
+  <table class="data w-100 mb-0">
+    <thead><tr><th>Asset</th><th>Result</th><th>Notes</th>{% if can_mark and cycle.status == "OPEN" %}<th>Mark</th>{% endif %}</tr></thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.asset.asset_tag }} — {{ item.asset.name }}</td>
+        <td><span class="pill {{ item.result|status_pill }}">{{ item.get_result_display }}</span></td>
+        <td>{{ item.notes }}</td>
+        {% if can_mark and cycle.status == "OPEN" %}
+        <td>
+          <form method="post" action="{% url 'audit_item_mark' item.pk %}" style="display:flex;gap:4px;align-items:center">
+            {% csrf_token %}
+            <select name="result" class="form-select form-select-sm" style="width:110px">
+              <option value="VERIFIED">Verified</option>
+              <option value="MISSING">Missing</option>
+              <option value="DAMAGED">Damaged</option>
+            </select>
+            <input type="text" name="notes" placeholder="Notes" class="form-control form-control-sm" style="width:140px">
+            <button class="btn btn-sm btn-outline-secondary">Save</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No assets in scope.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

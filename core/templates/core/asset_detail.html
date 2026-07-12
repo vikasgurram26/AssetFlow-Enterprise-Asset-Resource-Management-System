@@ -1,0 +1,105 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+{% block page_title %}{{ asset.asset_tag }} — {{ asset.name }}{% endblock %}
+{% block topbar_actions %}{% if can_manage %}<a href="{% url 'asset_edit' asset.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card-clean p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <div class="text-muted small">{{ asset.category.name }} &middot; {{ asset.serial_number }}</div>
+          <div class="fs-4 fw-semibold">{{ asset.name }}</div>
+        </div>
+        <span class="pill {{ asset.status|status_pill }} fs-6">{{ asset.get_status_display }}</span>
+      </div>
+      <table class="table table-sm">
+        <tr><th class="text-muted" style="width:180px">Location</th><td>{{ asset.location|default:"—" }}</td></tr>
+        <tr><th class="text-muted">Department</th><td>{{ asset.department|default:"—" }}</td></tr>
+        <tr><th class="text-muted">Condition</th><td>{{ asset.condition }}</td></tr>
+        <tr><th class="text-muted">Acquisition</th><td>{{ asset.acquisition_date }} — {{ asset.acquisition_cost }}</td></tr>
+        <tr><th class="text-muted">Bookable resource</th><td>{% if asset.is_bookable %}Yes{% else %}No{% endif %}</td></tr>
+        <tr><th class="text-muted">Currently held by</th>
+          <td>
+            {% if current_allocation %}
+              {{ current_allocation.employee|default:current_allocation.department }}
+              {% if current_allocation.expected_return_date %} — due {{ current_allocation.expected_return_date }}{% if asset.is_overdue %} <span class="pill pill-danger">Overdue</span>{% endif %}{% endif %}
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card-clean p-4 mb-4">
+      <div class="section-head"><h2>Allocation history</h2></div>
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Holder</th><th>Allocated</th><th>Returned</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for a in allocations %}
+          <tr>
+            <td>{{ a.employee|default:a.department }}</td><td>{{ a.allocated_date|date:"M d, Y" }}</td>
+            <td>{{ a.returned_date|date:"M d, Y"|default:"—" }}</td>
+            <td><span class="pill {{ a.status|status_pill }}">{{ a.get_status_display }}</span></td>
+          </tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">Never allocated.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-clean p-4">
+      <div class="section-head"><h2>Maintenance history</h2></div>
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Issue</th><th>Raised by</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for m in maintenance_requests %}
+          <tr><td>{{ m.issue_description|truncatechars:50 }}</td><td>{{ m.raised_by }}</td>
+            <td><span class="pill {{ m.status|status_pill }}">{{ m.get_status_display }}</span></td></tr>
+          {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">No maintenance history.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    {% if asset.status == "AVAILABLE" and can_manage %}
+    <div class="card-clean p-4 mb-3">
+      <h2 class="fs-6 fw-semibold mb-3">Allocate</h2>
+      <form method="post" action="{% url 'asset_allocate' asset.pk %}">
+        {% csrf_token %}
+        {% for field in allocate_form %}
+          <div class="mb-2"><label class="form-label small">{{ field.label }}</label>{{ field }}</div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary w-100">Allocate</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if asset.status == "ALLOCATED" %}
+    <div class="card-clean p-4 mb-3">
+      <h2 class="fs-6 fw-semibold mb-3">Currently allocated</h2>
+      <p class="text-muted small">Held by {{ current_allocation.employee|default:current_allocation.department }}. To give this to someone else, request a transfer — direct allocation is blocked while it's held.</p>
+      {% if can_manage %}
+      <form method="post" action="{% url 'allocation_return' current_allocation.pk %}">
+        {% csrf_token %}
+        <label class="form-label small">Condition notes (optional)</label>
+        <textarea name="condition_notes" class="form-control form-control-sm mb-2" rows="2"></textarea>
+        <button type="submit" class="btn btn-primary w-100">Mark returned</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="card-clean p-4">
+      <h2 class="fs-6 fw-semibold mb-3">Request transfer</h2>
+      <p class="text-muted small">Goes to an Asset Manager or Department Head for approval.</p>
+      <form method="post" action="{% url 'transfer_request_create' asset.pk %}">
+        {% csrf_token %}
+        {% for field in transfer_form %}
+          <div class="mb-2"><label class="form-label small">{{ field.label }}</label>{{ field }}</div>
+        {% endfor %}
+        <button type="submit" class="btn btn-outline-secondary w-100">Request transfer</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

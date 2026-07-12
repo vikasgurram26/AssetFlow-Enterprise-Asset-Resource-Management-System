@@ -1,0 +1,52 @@
+{% extends "core/base.html" %}
+{% block page_title %}Reports & analytics{% endblock %}
+{% block topbar_actions %}<a href="{% url 'reports_csv' %}" class="btn btn-outline-secondary btn-sm">Export CSV</a>{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card-clean p-3 mb-3">
+      <div class="section-head"><h2>Department-wise allocation</h2></div>
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Department</th><th>Assets</th></tr></thead>
+        <tbody>
+          {% for name, count in by_department.items %}<tr><td>{{ name }}</td><td>{{ count }}</td></tr>
+          {% empty %}<tr><td colspan="2" class="text-center text-muted py-3">No data yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-clean p-3">
+      <div class="section-head"><h2>By category — total vs allocated</h2></div>
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Category</th><th>Total</th><th>Allocated</th></tr></thead>
+        <tbody>
+          {% for name, d in by_category.items %}<tr><td>{{ name }}</td><td>{{ d.total }}</td><td>{{ d.allocated }}</td></tr>
+          {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">No data yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-clean p-3 mb-3">
+      <div class="section-head"><h2>Most-maintained assets</h2></div>
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Asset tag</th><th>Maintenance count</th></tr></thead>
+        <tbody>
+          {% for tag, count in most_maintained %}<tr><td>{{ tag }}</td><td>{{ count }}</td></tr>
+          {% empty %}<tr><td colspan="2" class="text-center text-muted py-3">No maintenance history yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-clean p-3">
+      <div class="section-head"><h2>Available longest (nearing review)</h2></div>
+      <table class="data w-100 mb-0">
+        <thead><tr><th>Asset</th><th>Acquired</th></tr></thead>
+        <tbody>
+          {% for a in nearing_retirement %}<tr><td>{{ a.asset_tag }} — {{ a.name }}</td><td>{{ a.acquisition_date }}</td></tr>
+          {% empty %}<tr><td colspan="2" class="text-center text-muted py-3">No data yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<p class="text-muted small mt-3">Utilization trends and a booking heatmap (per the brief's Reports screen) are natural next additions once there's enough booking/allocation volume to chart — the raw data (Booking, Allocation) is all there, this page just doesn't aggregate it into a time series yet.</p>
+{% endblock %}

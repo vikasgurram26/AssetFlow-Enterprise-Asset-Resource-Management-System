@@ -1,0 +1,108 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AssetFlow{% endblock %}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #101828; --sidebar: #131b2e; --sidebar-hover: #1f2a44;
+    --accent: #7c3aed; --accent-ink: #6d28d9; --muted: #667085; --border: #e4e7ec; --bg: #f7f8fa;
+    --ok: #067647; --ok-bg: #ecfdf3; --warn: #b54708; --warn-bg: #fffaeb;
+    --danger: #b42318; --danger-bg: #fef3f2; --info: #175cd3; --info-bg: #eff8ff;
+  }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--ink); }
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 224px; background: var(--sidebar); flex-shrink: 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+  .sidebar-brand { padding: 20px 20px; font-weight: 700; font-size: 17px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-brand span { color: #a78bfa; }
+  .sidebar-nav { padding: 10px; flex: 1; overflow-y: auto; }
+  .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-bottom: 2px; border-radius: 8px; color: #c7ccdb; text-decoration: none; font-size: 13.5px; font-weight: 500; }
+  .sidebar-nav a:hover { background: var(--sidebar-hover); color: #fff; }
+  .sidebar-nav a.active { background: var(--accent); color: #fff; }
+  .sidebar-foot { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-foot .role-pill { display: inline-block; font-size: 11px; font-weight: 600; color: #c4b5fd; background: rgba(167,139,250,0.14); border-radius: 999px; padding: 3px 9px; margin-bottom: 6px; }
+  .sidebar-foot .user { color: #e4e7ec; font-size: 13px; font-weight: 600; }
+  .sidebar-foot a.logout { color: #94a3b8; font-size: 12px; }
+  .main { flex: 1; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 26px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 18px; font-weight: 600; margin: 0; }
+  .content { padding: 22px 26px 48px; }
+  .card-clean { background: #fff; border: 1px solid var(--border); border-radius: 12px; }
+  .kpi-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .kpi-card .kpi-label { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .kpi-card .kpi-value { font-size: 26px; font-weight: 700; margin-top: 4px; }
+  .pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .pill-ok { color: var(--ok); background: var(--ok-bg); }
+  .pill-info { color: var(--info); background: var(--info-bg); }
+  .pill-warn { color: var(--warn); background: var(--warn-bg); }
+  .pill-danger { color: var(--danger); background: var(--danger-bg); }
+  .pill-muted { color: var(--muted); background: #f2f4f7; }
+  table.data th { font-size: 11.5px; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); padding: 9px 12px; }
+  table.data td { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 13.5px; vertical-align: middle; }
+  table.data tbody tr:hover { background: #fafbfc; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-ink); border-color: var(--accent-ink); }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-head h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  a { color: var(--accent); }
+  .bell { position: relative; text-decoration: none; color: var(--muted); font-size: 13px; }
+  .bell .dot { position: absolute; top: -4px; right: -8px; background: var(--danger); color: #fff; border-radius: 999px; font-size: 10px; padding: 0px 5px; }
+  .nav-tabs .nav-link.active { color: var(--accent); font-weight: 600; }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">Asset<span>Flow</span></div>
+    <nav class="sidebar-nav">
+      <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+      <a href="{% url 'org_setup' %}" class="{% if request.resolver_match.url_name == 'org_setup' %}active{% endif %}">Organization setup</a>
+      <a href="{% url 'asset_list' %}" class="{% if 'asset' in request.resolver_match.url_name %}active{% endif %}">Assets</a>
+      <a href="{% url 'transfer_list' %}" class="{% if 'transfer' in request.resolver_match.url_name or 'allocation' in request.resolver_match.url_name %}active{% endif %}">Allocation & transfer</a>
+      <a href="{% url 'booking_list' %}" class="{% if 'booking' in request.resolver_match.url_name %}active{% endif %}">Resource booking</a>
+      <a href="{% url 'maintenance_list' %}" class="{% if 'maintenance' in request.resolver_match.url_name %}active{% endif %}">Maintenance</a>
+      <a href="{% url 'audit_list' %}" class="{% if 'audit' in request.resolver_match.url_name %}active{% endif %}">Audit</a>
+      <a href="{% url 'reports' %}" class="{% if 'report' in request.resolver_match.url_name %}active{% endif %}">Reports</a>
+      <a href="{% url 'activity_log' %}" class="{% if request.resolver_match.url_name == 'activity_log' %}active{% endif %}">Activity log</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="role-pill">{{ user.get_role_display }}</div>
+      <div class="user">{{ user.get_full_name|default:user.username }}</div>
+      <form method="post" action="{% url 'logout' %}" style="margin-top:8px">
+        {% csrf_token %}
+        <button type="submit" class="logout" style="background:none;border:none;padding:0;cursor:pointer">Sign out</button>
+      </form>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+      <div class="d-flex align-items-center gap-3">
+        {% block topbar_actions %}{% endblock %}
+        <a href="{% url 'notification_list' %}" class="bell">Notifications
+          {% if unread_notification_count %}<span class="dot">{{ unread_notification_count }}</span>{% endif %}
+        </a>
+      </div>
+    </div>
+    <div class="content">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% else %}
+  {% block guest_content %}{% endblock %}
+{% endif %}
+{% block extra_body %}{% endblock %}
+</body>
+</html>

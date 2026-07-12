@@ -1,0 +1,26 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+{% block page_title %}Allocation & transfer{% endblock %}
+{% block content %}
+<div class="card-clean">
+  <table class="data w-100 mb-0">
+    <thead><tr><th>Asset</th><th>To</th><th>Requested by</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for t in transfers %}
+      <tr>
+        <td><a href="{% url 'asset_detail' t.asset.pk %}">{{ t.asset.asset_tag }}</a></td>
+        <td>{{ t.to_employee|default:t.to_department }}</td>
+        <td>{{ t.requested_by }}</td>
+        <td><span class="pill {{ t.status|status_pill }}">{{ t.get_status_display }}</span></td>
+        <td class="text-end">
+          {% if can_approve and t.status == "REQUESTED" %}
+          <form method="post" action="{% url 'transfer_decide' t.pk 'approve' %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Approve</button></form>
+          <form method="post" action="{% url 'transfer_decide' t.pk 'reject' %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Reject</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No transfer requests yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+{% block page_title %}Audit cycles{% endblock %}
+{% block topbar_actions %}{% if can_manage %}<a href="{% url 'audit_create' %}" class="btn btn-primary btn-sm">Create audit cycle</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="card-clean">
+  <table class="data w-100 mb-0">
+    <thead><tr><th>Name</th><th>Scope</th><th>Dates</th><th>Auditors</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for c in cycles %}
+      <tr onclick="window.location='{% url 'audit_detail' c.pk %}'" style="cursor:pointer">
+        <td>{{ c.name }}</td>
+        <td>{{ c.scope_department|default:"" }}{% if c.scope_location %} {{ c.scope_location }}{% endif %}{% if not c.scope_department and not c.scope_location %}All{% endif %}</td>
+        <td>{{ c.date_start }} – {{ c.date_end }}</td>
+        <td>{{ c.auditors.count }}</td>
+        <td><span class="pill {{ c.status|status_pill }}">{{ c.get_status_display }}</span></td>
+      </tr>
+      {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No audit cycles yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

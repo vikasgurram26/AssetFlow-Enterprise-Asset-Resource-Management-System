@@ -1,0 +1,21 @@
+{% extends "core/base.html" %}
+{% block page_title %}Notifications{% endblock %}
+{% block content %}
+<div class="card-clean">
+  <table class="data w-100 mb-0">
+    <thead><tr><th>Message</th><th>When</th><th></th></tr></thead>
+    <tbody>
+      {% for n in notifications %}
+      <tr style="{% if not n.is_read %}font-weight:600{% endif %}">
+        <td>{{ n.message }}</td><td class="text-muted">{{ n.created_at|timesince }} ago</td>
+        <td class="text-end">
+          {% if not n.is_read %}
+          <form method="post" action="{% url 'notification_read' n.pk %}" style="display:inline">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Mark read</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}<tr><td colspan="3" class="text-center text-muted py-4">No notifications.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
