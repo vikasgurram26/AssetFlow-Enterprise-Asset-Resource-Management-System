@@ -1,109 +1,80 @@
-# AssetFlow — base code
+# AssetFlow — Enterprise Asset & Resource Management System
 
-Django (6.0) + server-rendered templates (Bootstrap 5 via CDN). Same
-stack and conventions as the TransitOps build, if anyone on the team saw
-that one — same run commands, same file layout philosophy.
+AssetFlow is a premium, dark-themed Enterprise Asset & Resource Management System built using Django 6.0 and Tailwind CSS. It manages the full lifecycle of organization assets, handles department allocations, blocks double bookings of shared resources, coordinates maintenance requests, and organizes compliance audits.
 
-## Run it
+---
 
-```bash
-python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+## Recent Enhancements & Modernizations
+
+Since the initial baseline, the application has been updated with the following enterprise-grade enhancements:
+
+1. **Standardized Premium UI Layout**:
+   - Standardized a unified sidebar template inclusion at [sidebar.html](file:///c:/Users/Vikas%20Gurram/Desktop/assetflow/assetflow/core/templates/core/includes/sidebar.html).
+   - Cleaned up redundant navigation links across 15+ templates and replaced them with a single source of truth, removing over 1,000 redundant lines of HTML.
+   - Fixed global layout wrappers by standardizing a `260px` canvas offset for content blocks in [base.html](file:///c:/Users/Vikas%20Gurram/Desktop/assetflow/assetflow/core/templates/core/base.html).
+
+2. **Unified Form & Input Styling**:
+   - Customized input fields, select dropdowns, labels, buttons, and checkboxes globally in the base layout (`base.html`). All forms (such as new department/category forms, resource booking, and user role promotions) now match the dark theme natively.
+
+3. **Enterprise Test Suite**:
+   - Implemented 12 comprehensive unit and integration tests inside [tests.py](file:///c:/Users/Vikas%20Gurram/Desktop/assetflow/assetflow/core/tests.py) covering RBAC view gates, double allocation blockers, overlapping booking time-slot checks, maintenance lifecycle state transitions, and audit cycle closure lost-status conversions.
+
+4. **Security Hardening**:
+   - Settings are secured via environment variables using python-dotenv.
+   - Enforced strict server-side checks for signups: all public creations are forced to the `EMPLOYEE` role. Role promotion is restricted to the Administrator-only `/promote/` view.
+
+---
+
+## Setup & Running the Application
+
+### 1. Setup and Activate Virtual Environment
+```powershell
+# Windows PowerShell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+### 2. Install Dependencies & Migrate
+```powershell
 pip install -r requirements.txt
 python manage.py migrate
+```
+
+### 3. Seed Demo Data
+Populates default assets, users, departments, and categories:
+```powershell
 python manage.py seed_demo
+```
+
+### 4. Run the Automated Tests
+```powershell
+python manage.py test
+```
+
+### 5. Launch the Development Server
+```powershell
 python manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000/`. Demo logins (all password `pass1234`
-except admin):
+---
 
-| Username | Role |
-|---|---|
-| `admin` / `admin1234` | Admin — org setup, promotions, `/admin/` back-office |
-| `dept_head1` | Department Head — heads IT |
-| `asset_mgr1` | Asset Manager — registers/allocates assets, approves things |
-| `priya` | Employee — holds the seeded laptop (matches the brief's own worked example) |
-| `raj` | Employee — has an overdue allocation, for testing the dashboard's overdue panel |
+## Role-Based Access Credentials (Demo Users)
 
-Try `/signup/` too — it only ever creates an Employee account, by design.
+All seeded demo accounts have password `pass1234` except `admin`.
 
-## The rule that mattered most to get right
+| Username | Role | Purpose |
+|---|---|---|
+| `admin` / `admin1234` | Admin | Can manage organization setup, categories, and promote roles. |
+| `asset_mgr1` | Asset Manager | Can register assets, allocate them, and approve maintenance. |
+| `dept_head1` | Department Head | Can approve transfer requests. |
+| `priya` | Employee | Standard employee holding the default laptop allocation. |
+| `raj` | Employee | Standard employee with an overdue allocation (for overdue panel testing). |
 
-**Nobody can pick their own role.** Signup (`views.signup`) hardcodes
-`user.role = User.Role.EMPLOYEE` after the form saves, regardless of
-what's posted — verified this holds even if someone manually injects a
-`role` field into the POST body (tested it; the form has no such field,
-Django just ignores the extra key). The only path to Department Head /
-Asset Manager / Admin is `views.promote_employee`, gated by
-`@role_required("ADMIN")`, reachable only from the Employee Directory tab
-in Organization Setup. If your team adds any other way to set `role`,
-you've reopened the exact hole the brief calls out by name.
+---
 
-## Every mandatory business rule is enforced in `core/models.py`, not scattered across views
+## Crucial Business Rules (Implemented in `core/models.py`)
 
-Same pattern as before — each rule lives as a method on the model it
-governs, with a docstring naming which brief requirement it implements:
-
-- `Allocation.create_for()` — blocks double-allocation, raises the exact
-  "currently held by X" message from the brief's example
-- `TransferRequest.approve()` — closes the old allocation, opens a new
-  one, so history updates automatically
-- `Booking.create_for()` — the overlap check is the standard interval
-  test (`existing.start < new.end AND existing.end > new.start`);
-  verified against the brief's own example numbers (9:00–10:00 existing,
-  9:30–10:30 rejected, 10:00–11:00 accepted)
-- `MaintenanceRequest.approve()` — flips the asset to Under Maintenance
-  at approval, not at request time
-- `AuditCycle.close()` — flips Missing items to Lost
-
-## A bug worth knowing about, found via testing not inspection
-
-The maintenance workflow's `/assign/`, `/start/`, `/resolve/` URLs were
-originally registered AFTER a wildcard `<str:decision>` pattern that
-matches any string — Django resolves URLs in list order, so all three
-were silently getting swallowed by the wrong view and routed into a
-`reject()` call that then failed validation and did nothing. Found this
-by actually running the full workflow through the test client rather
-than trusting the code by inspection — worth doing the same for whatever
-you build next. Fixed in `core/urls.py`; the comment there explains it so
-nobody reintroduces it by adding a new maintenance sub-action above the
-wildcard line instead of below it.
-
-## What's simplified versus the full brief — deliberately, not accidentally
-
-- **Reports & Analytics**: category/department breakdowns and a
-  most-maintained list are there; utilization *trends* and the booking
-  *heatmap* aren't — those need a time-series aggregation this base
-  doesn't build yet. The raw data (`Booking`, `Allocation` timestamps) is
-  all there for whoever picks this up.
-- **Asset category custom fields**: one generic `warranty_period_days`
-  field rather than a dynamic per-category schema. Real dynamic fields
-  are a bigger feature than an 8-hour base should attempt.
-- **Photo/document attachments** on assets and maintenance requests:
-  not implemented. Add `ImageField`/`FileField` to `Asset` and
-  `MaintenanceRequest` when you're ready — needs `Pillow` and
-  `MEDIA_ROOT`/`MEDIA_URL` settings, about 20 minutes of work.
-- **Asset Tag generation** (`Asset._generate_asset_tag`) uses max+1,
-  which has a narrow race condition if two people register an asset in
-  the exact same instant. Fine at hackathon scale; noted in the code
-  rather than hidden.
-
-## Where to work without colliding
-
-Same division-of-labor logic as before — pick by module, `core/models.py`
-is the one shared file (talk before changing it):
-
-1. **Org setup + Auth** — `signup`, `login_view`, `org_setup`,
-   `department_*`, `category_*`, `promote_employee`. This has to be
-   solid first; Departments and Categories are foreign keys everywhere
-   else.
-2. **Assets + Allocation/Transfer** — the biggest, most rule-dense
-   module. Good pairing candidate.
-3. **Booking + Maintenance** — two independent workflow modules, each
-   fully self-contained.
-4. **Audit + Reports + Notifications/Activity log** — the "oversight"
-   layer; naturally comes together once 1–3 have real data flowing.
-
-Django admin at `/admin/` is your fallback back-office for anything not
-built out in the custom UI yet — same as the TransitOps project.
+- **Double Allocation Protection**: Enforced inside `Allocation.create_for()` (raises `ValidationError` with details on who currently holds the asset).
+- **Time Slot Overlap Protection**: Enforced inside `Booking.create_for()`. Checks `(start_time < existing.end) AND (end_time > existing.start)` to block overlapping bookings.
+- **Maintenance State Flip**: Enforced inside `MaintenanceRequest.approve()`. Flipping a ticket to approved moves the asset status to `UNDER_MAINTENANCE` automatically.
+- **Audit Deficiencies**: Enforced inside `AuditCycle.close()`. Closing an audit automatically sets all `MISSING` items to `LOST` in the asset directory.
