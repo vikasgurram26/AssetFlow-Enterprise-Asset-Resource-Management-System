@@ -545,6 +545,12 @@ function openDrawer() {
     document.getElementById('detail-drawer').style.display = 'flex';
 }
 
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+}
+
 function showDeptDetails(pk, name, headName, headInitials, parentName, status) {
     openDrawer();
     document.getElementById('drawer-title').innerText = "Department Info";
@@ -557,23 +563,23 @@ function showDeptDetails(pk, name, headName, headInitials, parentName, status) {
     `;
     if (headName !== "Unassigned") {
         headHtml = `
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">${headInitials}</div>
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">${escapeHtml(headInitials)}</div>
           <div class="flex-1">
-            <div class="font-body-base text-on-surface font-medium">${headName}</div>
+            <div class="font-body-base text-on-surface font-medium">${escapeHtml(headName)}</div>
           </div>
         `;
     }
 
     const isStatusActive = status.toUpperCase() === 'ACTIVE';
-    const statusPillClass = isStatusActive 
-        ? 'bg-secondary/10 text-secondary border border-secondary/20 glow-active' 
+    const statusPillClass = isStatusActive
+        ? 'bg-secondary/10 text-secondary border border-secondary/20 glow-active'
         : 'bg-outline-variant/10 text-outline border border-outline-variant/20';
 
     document.getElementById('drawer-content').innerHTML = `
       <div class="flex flex-col gap-lg">
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Department Name</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${name}</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${escapeHtml(name)}</div>
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Department Head</label>
@@ -583,11 +589,11 @@ function showDeptDetails(pk, name, headName, headInitials, parentName, status) {
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Parent Department</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${parentName}</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${escapeHtml(parentName)}</div>
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Status</label>
-          <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-md ${statusPillClass} font-label-caps text-[10px] w-max">${status}</div>
+          <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-md ${statusPillClass} font-label-caps text-[10px] w-max">${escapeHtml(status)}</div>
         </div>
       </div>
     `;
@@ -611,15 +617,15 @@ function showCategoryDetails(pk, name, warranty, description) {
       <div class="flex flex-col gap-lg">
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Category Name</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${name}</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${escapeHtml(name)}</div>
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Warranty Period</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${warranty} Days</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${escapeHtml(warranty)} Days</div>
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Description</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface min-h-[100px] whitespace-pre-wrap">${description || "No description provided."}</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface min-h-[100px] whitespace-pre-wrap">${escapeHtml(description) || "No description provided."}</div>
         </div>
       </div>
     `;
@@ -640,31 +646,31 @@ function showEmployeeDetails(pk, name, initials, email, department, role, status
     document.getElementById('drawer-title').innerText = "Employee Info";
 
     const isStatusActive = status.toUpperCase() === 'ACTIVE';
-    const statusPillClass = isStatusActive 
-        ? 'bg-secondary/10 text-secondary border border-secondary/20 glow-active' 
+    const statusPillClass = isStatusActive
+        ? 'bg-secondary/10 text-secondary border border-secondary/20 glow-active'
         : 'bg-outline-variant/10 text-outline border border-outline-variant/20';
 
     document.getElementById('drawer-content').innerHTML = `
       <div class="flex flex-col gap-lg">
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Employee Name</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${name}</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-semibold">${escapeHtml(name)}</div>
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Email Address</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${email}</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${escapeHtml(email)}</div>
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Assigned Department</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${department}</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface">${escapeHtml(department)}</div>
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">System Role</label>
-          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-medium text-primary">${role}</div>
+          <div class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface font-medium text-primary">${escapeHtml(role)}</div>
         </div>
         <div>
           <label class="block font-label-caps text-on-surface-variant uppercase mb-2">Status</label>
-          <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-md ${statusPillClass} font-label-caps text-[10px] w-max">${status}</div>
+          <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-md ${statusPillClass} font-label-caps text-[10px] w-max">${escapeHtml(status)}</div>
         </div>
       </div>
     `;

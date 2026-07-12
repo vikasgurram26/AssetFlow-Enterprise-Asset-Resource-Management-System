@@ -96,7 +96,7 @@ def dashboard(request):
 
 # --- Org setup (Admin only) -------------------------------------------------
 
-@login_required(login_url="login")
+@role_required(*MANAGES_ORG)
 def org_setup(request):
     return render(request, "core/org_setup.html", {
         "departments": Department.objects.all(),
@@ -176,6 +176,23 @@ def asset_list(request):
         "categories": AssetCategory.objects.all(),
         "can_manage": request.user.has_role(*MANAGES_ASSETS),
     })
+
+
+@role_required(*MANAGES_ASSETS)
+def asset_bulk_retire(request):
+    if request.method == "POST":
+        ids = request.POST.getlist("asset_ids")
+        assets = Asset.objects.filter(pk__in=ids).exclude(status=Asset.Status.RETIRED)
+        count = assets.count()
+        for asset in assets:
+            asset.status = Asset.Status.RETIRED
+            asset.save(update_fields=["status"])
+            log_activity(request.user, f"Retired asset {asset.asset_tag}")
+        if count:
+            messages.success(request, f"Retired {count} asset(s).")
+        else:
+            messages.error(request, "No assets were retired.")
+    return redirect("asset_list")
 
 
 @role_required(*MANAGES_ASSETS)

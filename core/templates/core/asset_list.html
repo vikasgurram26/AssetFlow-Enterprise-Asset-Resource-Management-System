@@ -284,12 +284,25 @@
             <option value="">Location</option>
         </select>
 
+        {% if can_manage %}
+        <button type="button" id="bulk-delete-btn" onclick="submitBulkRetire()" class="hidden h-[36px] px-lg rounded bg-error/10 border border-error/30 text-error hover:bg-error/20 transition-colors text-[13px] items-center justify-center gap-sm">
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+            <span id="bulk-delete-count">Delete</span>
+        </button>
+        {% endif %}
+
         {% if request.GET.q or request.GET.category or request.GET.status %}
         <a href="{% url 'asset_list' %}" class="h-[36px] px-lg rounded bg-transparent border border-[#2A2C33] text-on-surface-variant hover:text-on-surface transition-colors text-[13px] flex items-center justify-center">
             Clear
         </a>
         {% endif %}
     </form>
+
+    {% if can_manage %}
+    <form id="bulk-retire-form" method="post" action="{% url 'asset_bulk_retire' %}" class="hidden">
+        {% csrf_token %}
+    </form>
+    {% endif %}
 
     <!-- Main Data Area (Bento-style wrapping the table) -->
     <div class="flex-1 px-xl py-lg overflow-hidden flex gap-md bg-[#0E0F12]">
@@ -323,7 +336,7 @@
                             style="cursor:pointer">
                             
                             <td class="px-md text-center" onclick="event.stopPropagation();">
-                                <input class="row-checkbox rounded bg-[#0E0F12] border-[#2A2C33] text-primary focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-transparent w-4 h-4 cursor-pointer" type="checkbox"/>
+                                <input class="row-checkbox rounded bg-[#0E0F12] border-[#2A2C33] text-primary focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-transparent w-4 h-4 cursor-pointer" data-pk="{{ a.pk }}" data-tag="{{ a.asset_tag|escapejs }}" onchange="updateBulkDeleteVisibility()" type="checkbox"/>
                             </td>
                             <td class="px-md text-primary font-mono-tabular font-semibold">{{ a.asset_tag }}</td>
                             <td class="px-md font-body-bold text-[13px] text-on-surface truncate max-w-[200px]">{{ a.name }}</td>
@@ -533,6 +546,40 @@
         checkboxes.forEach(cb => {
             cb.checked = master.checked;
         });
+        updateBulkDeleteVisibility();
+    }
+
+    function updateBulkDeleteVisibility() {
+        const btn = document.getElementById('bulk-delete-btn');
+        if (!btn) return;
+        const selected = document.querySelectorAll('.row-checkbox:checked');
+        if (selected.length > 0) {
+            btn.classList.remove('hidden');
+            btn.classList.add('flex');
+            document.getElementById('bulk-delete-count').innerText = `Delete (${selected.length})`;
+        } else {
+            btn.classList.add('hidden');
+            btn.classList.remove('flex');
+        }
+    }
+
+    function submitBulkRetire() {
+        const selected = document.querySelectorAll('.row-checkbox:checked');
+        if (selected.length === 0) return;
+        const tags = Array.from(selected).map(cb => cb.getAttribute('data-tag')).join(', ');
+        if (!confirm(`Retire ${selected.length} asset(s) (${tags})? This marks them as Retired and removes them from active circulation.`)) {
+            return;
+        }
+        const form = document.getElementById('bulk-retire-form');
+        form.querySelectorAll('input[name="asset_ids"]').forEach(el => el.remove());
+        selected.forEach(cb => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'asset_ids';
+            input.value = cb.getAttribute('data-pk');
+            form.appendChild(input);
+        });
+        form.submit();
     }
 
     // Client-side filtering logic

@@ -20,7 +20,8 @@
             <span class="text-sm font-medium">Dashboard</span>
         </a>
         
-        <!-- Organization Setup Link -->
+        <!-- Organization Setup Link (Admin only) -->
+        {% if user.is_admin %}
         <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'org_setup' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'org_setup' %}">
             {% if request.resolver_match.url_name == 'org_setup' %}
             <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
@@ -28,7 +29,8 @@
             <span class="material-symbols-outlined text-[18px]">domain</span>
             <span class="text-sm font-medium">Organization</span>
         </a>
-        
+        {% endif %}
+
         <!-- Assets Link -->
         <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'asset' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %} no-underline" href="{% url 'asset_list' %}">
             {% if 'asset' in request.resolver_match.url_name %}

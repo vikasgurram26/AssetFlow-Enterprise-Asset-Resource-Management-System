@@ -16,6 +16,7 @@ urlpatterns = [
     path("org/employees/<int:pk>/promote/", views.promote_employee, name="promote_employee"),
 
     path("assets/", views.asset_list, name="asset_list"),
+    path("assets/bulk-retire/", views.asset_bulk_retire, name="asset_bulk_retire"),
     path("assets/new/", views.asset_form, name="asset_create"),
     path("assets/<int:pk>/", views.asset_detail, name="asset_detail"),
     path("assets/<int:pk>/edit/", views.asset_form, name="asset_edit"),

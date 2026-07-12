@@ -1,7 +1,8 @@
 from datetime import date, datetime, timedelta
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from core.models import (Allocation, Asset, AssetCategory, AuditCycle, Booking,
@@ -11,9 +12,17 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Seed demo users, departments, categories, and sample assets for AssetFlow."
+    help = ("Seed demo users, departments, categories, and sample assets for "
+            "AssetFlow. Development only — creates well-known demo credentials "
+            "(admin/admin1234, etc.), so it refuses to run when DEBUG is False.")
 
     def handle(self, *args, **options):
+        if not settings.DEBUG:
+            raise CommandError(
+                "seed_demo creates well-known demo credentials (admin/admin1234, "
+                "pass1234, ...) and must not be run against a production "
+                "(DEBUG=False) deployment."
+            )
         self.stdout.write("Seeding AssetFlow demo data...")
 
         if not User.objects.filter(is_superuser=True).exists():
