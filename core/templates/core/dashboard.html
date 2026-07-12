@@ -1,51 +1,631 @@
-{% extends "core/base.html" %}
+{% load static %}
 {% load core_extras %}
-{% block page_title %}Dashboard{% endblock %}
-{% block topbar_actions %}
-  <a href="{% url 'asset_create' %}" class="btn btn-sm btn-outline-secondary">Register asset</a>
-  <a href="{% url 'booking_create' %}" class="btn btn-sm btn-outline-secondary">Book resource</a>
-  <a href="{% url 'maintenance_create' %}" class="btn btn-sm btn-outline-secondary">Raise request</a>
-{% endblock %}
-{% block content %}
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Available</div><div class="kpi-value">{{ kpis.available }}</div></div></div>
-  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Allocated</div><div class="kpi-value">{{ kpis.allocated }}</div></div></div>
-  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Maintenance today</div><div class="kpi-value">{{ kpis.maintenance_today }}</div></div></div>
-  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Active bookings</div><div class="kpi-value">{{ kpis.active_bookings }}</div></div></div>
-  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Pending transfers</div><div class="kpi-value">{{ kpis.pending_transfers }}</div></div></div>
-  <div class="col-6 col-lg-2"><div class="kpi-card"><div class="kpi-label">Upcoming returns</div><div class="kpi-value">{{ kpis.upcoming_returns }}</div></div></div>
-</div>
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AssetFlow - Executive Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        surface: "#080A0D",
+                        "surface-raised": "rgba(18, 22, 28, 0.6)",
+                        "surface-border": "rgba(255, 255, 255, 0.06)",
+                        "surface-highlight": "rgba(255, 255, 255, 0.03)",
+                        primary: "#819CFF",
+                        "primary-dim": "rgba(129, 156, 255, 0.15)",
+                        secondary: "#4ADE80",
+                        "secondary-dim": "rgba(74, 222, 128, 0.15)",
+                        warning: "#FBBF24",
+                        "warning-dim": "rgba(251, 191, 36, 0.15)",
+                        danger: "#F87171",
+                        "danger-dim": "rgba(248, 113, 113, 0.15)",
+                        text: {
+                            main: "#F3F4F6",
+                            muted: "#9CA3AF",
+                            faint: "#6B7280"
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Inter', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20; }
+        
+        /* Subtle scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-{% if overdue %}
-<div class="card-clean p-3 mb-4" style="border-color:#f0997b">
-  <div class="section-head mb-2"><h2 class="text-danger">Overdue returns</h2></div>
-  <table class="data w-100 mb-0">
-    <thead><tr><th>Asset</th><th>Held by</th><th>Expected return</th></tr></thead>
-    <tbody>
-      {% for a in overdue %}
-      <tr><td><a href="{% url 'asset_detail' a.asset.pk %}">{{ a.asset }}</a></td><td>{{ a.employee|default:a.department }}</td><td class="text-danger">{{ a.expected_return_date }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
+        .glass-panel {
+            background: rgba(18, 22, 28, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sparkline-up { stroke: #4ADE80; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        .sparkline-down { stroke: #F87171; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        .sparkline-neutral { stroke: #819CFF; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+</head>
+<body class="bg-surface text-text-main font-sans antialiased min-h-screen flex overflow-hidden selection:bg-primary selection:text-surface">
+<!-- Modern Sidebar -->
+<nav class="h-screen w-[260px] fixed left-0 top-0 bg-surface/80 backdrop-blur-xl border-r border-surface-border flex flex-col py-8 z-50">
+    <div class="px-8 mb-10 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(129,156,255,0.3)]">
+            <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1">layers</span>
+        </div>
+        <div>
+            <h1 class="text-base font-semibold tracking-wide text-text-main">AssetFlow</h1>
+            <p class="text-[11px] font-medium text-text-muted uppercase tracking-wider mt-0.5">Enterprise</p>
+        </div>
+    </div>
+    
+    <div class="flex flex-col gap-1 px-4 flex-1">
+        <!-- Dashboard Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'dashboard' %}">
+            {% if request.resolver_match.url_name == 'dashboard' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span class="text-sm font-medium">Dashboard</span>
+        </a>
+        
+        <!-- Organization Setup Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'org_setup' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'org_setup' %}">
+            {% if request.resolver_match.url_name == 'org_setup' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">domain</span>
+            <span class="text-sm font-medium">Organization</span>
+        </a>
+        
+        <!-- Assets Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'asset' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'asset_list' %}">
+            {% if 'asset' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+            <span class="text-sm font-medium">Assets</span>
+        </a>
+        
+        <!-- Allocation & Transfer Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'transfer' in request.resolver_match.url_name or 'allocation' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'transfer_list' %}">
+            {% if 'transfer' in request.resolver_match.url_name or 'allocation' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+            <span class="text-sm font-medium">Allocation</span>
+        </a>
+        
+        <!-- Booking Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'booking' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'booking_list' %}">
+            {% if 'booking' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+            <span class="text-sm font-medium">Booking</span>
+        </a>
+        
+        <!-- Maintenance Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'maintenance' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'maintenance_list' %}">
+            {% if 'maintenance' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">build</span>
+            <span class="text-sm font-medium">Maintenance</span>
+        </a>
+        
+        <!-- Audit Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'audit' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'audit_list' %}">
+            {% if 'audit' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">fact_check</span>
+            <span class="text-sm font-medium">Audit</span>
+        </a>
+        
+        <div class="mt-6 mb-2 px-4">
+            <p class="text-[10px] font-semibold text-text-faint uppercase tracking-wider">Insights</p>
+        </div>
+        
+        <!-- Reports Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if 'report' in request.resolver_match.url_name %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'reports' %}">
+            {% if 'report' in request.resolver_match.url_name %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">analytics</span>
+            <span class="text-sm font-medium">Reports</span>
+        </a>
+        
+        <!-- Activity Log Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'activity_log' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'activity_log' %}">
+            {% if request.resolver_match.url_name == 'activity_log' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">history</span>
+            <span class="text-sm font-medium">Activity Log</span>
+        </a>
+        
+        <!-- Notifications Link -->
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all {% if request.resolver_match.url_name == 'notification_list' %}bg-surface-highlight text-primary relative group{% else %}text-text-muted hover:text-text-main hover:bg-surface-highlight{% endif %}" href="{% url 'notification_list' %}">
+            {% if request.resolver_match.url_name == 'notification_list' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"></div>
+            {% endif %}
+            <span class="material-symbols-outlined text-[18px]">notifications</span>
+            <span class="text-sm font-medium">Notifications</span>
+            {% if unread_notification_count %}
+            <span class="ml-auto bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">{{ unread_notification_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+    
+    <div class="px-6 mt-auto flex flex-col gap-4">
+        <a class="w-full bg-text-main hover:bg-white text-surface text-sm font-semibold h-10 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]" href="{% url 'asset_create' %}">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Register Asset
+        </a>
+        
+        <div class="pt-4 border-t border-surface-border flex items-center justify-between">
+            <div class="min-w-0">
+                <div class="text-xs font-semibold text-text-main truncate">{{ user.get_full_name|default:user.username }}</div>
+                <div class="text-[10px] text-text-muted mt-0.5">{{ user.get_role_display }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="text-text-muted hover:text-danger transition-colors bg-none border-none p-1 cursor-pointer flex items-center">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
 
-<div class="row g-3">
-  <div class="col-lg-6">
-    <div class="card-clean p-3">
-      <div class="section-head"><h2>Recent activity</h2><a href="{% url 'activity_log' %}" class="small">View all</a></div>
-      {% for log in recent_activity %}
-        <div class="small mb-2"><strong>{{ log.user|default:"System" }}</strong> — {{ log.description }} <span class="text-muted">({{ log.created_at|timesince }} ago)</span></div>
-      {% empty %}<div class="text-muted small">No activity yet.</div>{% endfor %}
+<!-- Main Content -->
+<div class="flex-1 ml-[260px] flex flex-col h-screen relative bg-[radial-gradient(ellipse_at_top_right,_var(--tw-colors-primary-dim),_transparent_50%)]">
+    <!-- Top Navigation -->
+    <header class="h-16 border-b border-surface-border flex items-center justify-between px-8 w-full sticky top-0 z-40 bg-surface/50 backdrop-blur-md">
+        <form action="{% url 'asset_list' %}" method="get" class="relative group">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px] group-focus-within:text-primary transition-colors">search</span>
+            <input name="q" class="bg-surface-raised border border-surface-border rounded-lg h-9 pl-10 pr-4 py-0 text-sm text-text-main placeholder:text-text-faint focus:outline-none focus:border-primary/50 focus:bg-surface-highlight focus:ring-1 focus:ring-primary/50 w-[320px] transition-all" placeholder="Search resources, users or assets..." type="text"/>
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
+                <kbd class="hidden sm:inline-block border border-surface-border bg-surface rounded px-1.5 text-[10px] text-text-faint font-mono">⌘</kbd>
+                <kbd class="hidden sm:inline-block border border-surface-border bg-surface rounded px-1.5 text-[10px] text-text-faint font-mono">K</kbd>
+            </div>
+        </form>
+        <div class="flex items-center gap-5">
+            <a href="{% url 'notification_list' %}" class="text-text-muted hover:text-text-main transition-colors relative">
+                <span class="material-symbols-outlined text-[20px]">notifications</span>
+                {% if unread_notification_count %}
+                <span class="absolute top-0 right-0 w-2 h-2 bg-danger rounded-full animate-pulse"></span>
+                {% endif %}
+            </a>
+            <div class="w-8 h-8 rounded-full overflow-hidden border border-surface-border cursor-pointer hover:border-primary transition-colors ring-2 ring-transparent hover:ring-primary/20">
+                <img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9FWz62rnwSzGc7FUNrGytiqglUVoflu0bM7WJ5it27Qp87qbRmtq3iU8O_Uz-LvkXcfQMs_Q8M5uz9CUPwaqIIG3y77CNWp65p34Ef9QpuKNf_6g_qrOxdZDSoCKKWPVRFLwrjEtlYLIT14DqIyTnNcuQfTTRem5M4D-pe7aXd0HzsDVE2yry02raRVeGRimEjl_z0YRnFqfD7uNR94qBiZy0__H4RgBjo85eM6te3LdcAnsuhLynTQ"/>
+            </div>
+        </div>
+    </header>
+
+    <!-- Overdue Alert Banner (Integrated Top Level) -->
+    {% if overdue %}
+    <div class="bg-danger/10 border-b border-danger/20 backdrop-blur-md px-8 py-3 flex items-center justify-between shadow-[0_4px_20px_-5px_rgba(248,113,113,0.1)] relative z-30">
+        <div class="flex items-center gap-3">
+            <div class="w-6 h-6 rounded-full bg-danger/20 flex items-center justify-center">
+                <span class="material-symbols-outlined text-[14px] text-danger" style="font-variation-settings: 'FILL' 1">error</span>
+            </div>
+            <span class="text-sm font-medium text-danger">{{ overdue|length }} critical asset{{ overdue|pluralize }} are overdue for return. Immediate action required.</span>
+        </div>
+        <a href="#overdue-section" class="text-xs font-semibold text-danger hover:text-red-400 uppercase tracking-wider transition-colors px-3 py-1 rounded bg-danger/10 hover:bg-danger/20">Review Now</a>
     </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="card-clean p-3">
-      <div class="section-head"><h2>Upcoming returns</h2></div>
-      {% for a in upcoming_returns %}
-        <div class="small mb-2">{{ a.asset }} — {{ a.employee|default:a.department }} — due {{ a.expected_return_date }}</div>
-      {% empty %}<div class="text-muted small">Nothing due soon.</div>{% endfor %}
-    </div>
-  </div>
+    {% endif %}
+
+    <!-- Main Content Scrollable -->
+    <main class="flex-1 overflow-y-auto p-8 flex flex-col gap-8 w-full max-w-[1600px] mx-auto">
+        <!-- Page Header -->
+        <div class="flex justify-between items-end">
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight text-text-main mb-1">Executive Overview</h2>
+                <p class="text-sm text-text-muted">Real-time asset visibility and resource orchestration.</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'booking_create' %}" class="glass-panel hover:bg-surface-highlight text-text-main text-sm font-medium h-10 px-4 rounded-lg transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">calendar_add_on</span>
+                    Book Resource
+                </a>
+                <a href="{% url 'maintenance_create' %}" class="glass-panel hover:bg-surface-highlight text-text-main text-sm font-medium h-10 px-4 rounded-lg transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">assignment_add</span>
+                    Raise Request
+                </a>
+            </div>
+        </div>
+
+        <!-- Premium KPI Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <!-- KPI 1: Available -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-secondary/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Available</span>
+                    <div class="w-6 h-6 rounded-md bg-secondary/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-secondary">inventory</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight">{{ kpis.available }}</span>
+                </div>
+                <div class="mt-4 h-6 w-full">
+                    <svg class="w-full h-full opacity-60" preserveaspectratio="none" viewbox="0 0 100 20">
+                        <path class="sparkline-up" d="M0 15 L20 10 L40 12 L60 5 L80 8 L100 2"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- KPI 2: Allocated -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-primary/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Allocated</span>
+                    <div class="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-primary">swap_horiz</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight">{{ kpis.allocated }}</span>
+                </div>
+                <div class="mt-4 h-6 w-full">
+                    <svg class="w-full h-full opacity-60" preserveaspectratio="none" viewbox="0 0 100 20">
+                        <path class="sparkline-neutral" d="M0 18 L20 12 L40 15 L60 8 L80 10 L100 4"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- KPI 3: Maintenance -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-warning/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Maintenance</span>
+                    <div class="w-6 h-6 rounded-md bg-warning/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-warning">build</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight">{{ kpis.maintenance_today }}</span>
+                    <span class="text-xs font-medium text-warning flex items-center">Today</span>
+                </div>
+                <div class="mt-4 h-6 w-full">
+                    <svg class="w-full h-full opacity-60" preserveaspectratio="none" viewbox="0 0 100 20">
+                        <path class="sparkline-neutral" d="M0 10 L20 10 L40 10 L60 10 L80 5 L100 5" style="stroke: #FBBF24"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- KPI 4: Bookings -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-primary/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Bookings</span>
+                    <div class="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-primary">event_available</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight">{{ kpis.active_bookings }}</span>
+                    <span class="text-xs font-medium text-text-muted">Active</span>
+                </div>
+                <div class="mt-4 h-6 w-full flex items-end gap-1">
+                    <div class="w-full bg-primary/20 rounded-t h-[30%]"></div>
+                    <div class="w-full bg-primary/20 rounded-t h-[50%]"></div>
+                    <div class="w-full bg-primary/40 rounded-t h-[40%]"></div>
+                    <div class="w-full bg-primary/60 rounded-t h-[80%]"></div>
+                    <div class="w-full bg-primary rounded-t h-[100%]"></div>
+                </div>
+            </div>
+
+            <!-- KPI 5: Transfers -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-surface-border transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Transfers</span>
+                    <div class="w-6 h-6 rounded-md bg-surface-highlight flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-text-muted">local_shipping</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight">{{ kpis.pending_transfers }}</span>
+                    <span class="text-xs font-medium text-text-muted">Pending</span>
+                </div>
+                <div class="mt-4 h-6 w-full">
+                    <div class="w-full h-1.5 bg-surface-border rounded-full overflow-hidden mt-3">
+                        <div class="h-full bg-text-muted w-1/3 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI 6: Returns -->
+            <div class="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-surface-border transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Returns</span>
+                    <div class="w-6 h-6 rounded-md bg-surface-highlight flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[14px] text-text-muted">keyboard_return</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                    <span class="text-3xl font-bold text-text-main tracking-tight">{{ kpis.upcoming_returns }}</span>
+                    <span class="text-xs font-medium text-text-muted">Upcoming</span>
+                </div>
+                <div class="mt-4 h-6 w-full flex items-end gap-1">
+                    <div class="w-full bg-surface-border rounded-t h-[80%]"></div>
+                    <div class="w-full bg-surface-border rounded-t h-[60%]"></div>
+                    <div class="w-full bg-surface-border rounded-t h-[40%]"></div>
+                    <div class="w-full bg-surface-border rounded-t h-[70%]"></div>
+                    <div class="w-full bg-text-muted rounded-t h-[100%]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Table Section -->
+        {% if overdue %}
+        <div id="overdue-section" class="glass-panel rounded-xl flex flex-col border-danger/30 bg-danger/5">
+            <div class="px-6 py-5 border-b border-danger/10 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-danger text-[18px]">warning</span>
+                    <h3 class="text-sm font-semibold text-danger">Overdue Returns</h3>
+                </div>
+            </div>
+            <div class="overflow-x-auto px-2 pb-2">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border">Asset ID / Name</th>
+                            <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border">Held By</th>
+                            <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border text-right">Expected Return Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for a in overdue %}
+                        <tr class="border-b border-surface-border/50 hover:bg-surface-highlight/50 transition-colors group cursor-pointer" onclick="window.location='{% url 'asset_detail' a.asset.pk %}'">
+                            <td class="px-4 py-3.5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-surface border border-surface-border flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-text-muted text-[16px]">devices</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-text-main">{{ a.asset.name }}</div>
+                                        <div class="text-[11px] font-mono text-primary/80 mt-0.5">{{ a.asset.asset_tag }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3.5">
+                                <div class="text-text-main">{{ a.employee|default:a.department }}</div>
+                            </td>
+                            <td class="px-4 py-3.5 text-right text-xs text-danger font-medium">
+                                {{ a.expected_return_date }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Content Area Split -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Recent Activity Feed -->
+            <div class="lg:col-span-2 glass-panel rounded-xl flex flex-col h-[520px]">
+                <div class="px-6 py-5 border-b border-surface-border flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-text-muted text-[18px]">history</span>
+                        <h3 class="text-sm font-semibold text-text-main">Recent Activity Log</h3>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="{% url 'activity_log' %}" class="text-xs text-text-muted hover:text-text-main bg-surface-highlight px-3 py-1 rounded-md transition-colors">View All</a>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto px-2 pb-2">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-surface-raised backdrop-blur-md z-10">
+                            <tr>
+                                <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border">Description</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border">Category</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border">User</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border text-right">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            {% for log in recent_activity %}
+                            <tr class="border-b border-surface-border/50 hover:bg-surface-highlight/50 transition-colors group cursor-pointer">
+                                <td class="px-4 py-3.5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-surface border border-surface-border flex items-center justify-center">
+                                            <span class="material-symbols-outlined text-text-muted text-[16px]">history</span>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="font-medium text-text-main truncate max-w-[280px]">{{ log.description }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wide bg-primary/10 text-primary border border-primary/20">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                        Activity
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <div class="text-text-main">{{ log.user|default:"System" }}</div>
+                                    <div class="text-xs text-text-faint mt-0.5">{% if log.user.role %}{{ log.user.get_role_display }}{% else %}-{% endif %}</div>
+                                </td>
+                                <td class="px-4 py-3.5 text-right text-xs text-text-muted group-hover:text-text-main transition-colors">
+                                    {{ log.created_at|timesince }} ago
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-text-muted">No activity yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Asset Distribution Chart -->
+            <div class="glass-panel rounded-xl p-6 flex flex-col h-[520px] relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+                <div class="flex justify-between items-center mb-8 relative z-10">
+                    <h3 class="text-sm font-semibold text-text-main">Portfolio Breakdown</h3>
+                </div>
+                <!-- Donut Chart Placeholder -->
+                <div class="relative flex-1 flex flex-col items-center justify-center z-10">
+                    <div class="w-48 h-48 rounded-full border-[16px] border-surface-border relative flex items-center justify-center shadow-[inset_0_4px_20px_rgba(0,0,0,0.5)]">
+                        <!-- Simulated Chart Segments -->
+                        <div class="absolute inset-0 rounded-full border-[16px] border-primary" style="clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 70% 100%);"></div>
+                        <div class="absolute inset-0 rounded-full border-[16px] border-secondary" style="clip-path: polygon(50% 50%, 70% 100%, 0 100%, 0 40%);"></div>
+                        <div class="absolute inset-0 rounded-full border-[16px] border-warning" style="clip-path: polygon(50% 50%, 0 40%, 0 0, 20% 0);"></div>
+                        <!-- Inner Content -->
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-text-main">{{ kpis.available|add:kpis.allocated }}</div>
+                            <div class="text-[10px] font-medium text-text-muted uppercase tracking-wider mt-1">Active Assets</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Custom Legend/Progress -->
+                <div class="mt-8 flex flex-col gap-4 relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full bg-primary"></div>
+                        <div class="flex-1 text-xs font-medium text-text-main">IT Equipment</div>
+                        <div class="text-xs font-mono text-text-muted">45%</div>
+                        <div class="w-24 h-1.5 bg-surface-border rounded-full overflow-hidden">
+                            <div class="bg-primary h-full w-[45%] rounded-full shadow-[0_0_10px_rgba(129,156,255,0.5)]"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full bg-secondary"></div>
+                        <div class="flex-1 text-xs font-medium text-text-main">Vehicles</div>
+                        <div class="text-xs font-mono text-text-muted">25%</div>
+                        <div class="w-24 h-1.5 bg-surface-border rounded-full overflow-hidden">
+                            <div class="bg-secondary h-full w-[25%] rounded-full shadow-[0_0_10px_rgba(74,222,128,0.5)]"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full bg-warning"></div>
+                        <div class="flex-1 text-xs font-medium text-text-main">Machinery</div>
+                        <div class="text-xs font-mono text-text-muted">20%</div>
+                        <div class="w-24 h-1.5 bg-surface-border rounded-full overflow-hidden">
+                            <div class="bg-warning h-full w-[20%] rounded-full shadow-[0_0_10px_rgba(251,191,36,0.5)]"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full bg-text-muted"></div>
+                        <div class="flex-1 text-xs font-medium text-text-main">Facilities</div>
+                        <div class="text-xs font-mono text-text-muted">10%</div>
+                        <div class="w-24 h-1.5 bg-surface-border rounded-full overflow-hidden">
+                            <div class="bg-text-muted h-full w-[10%] rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Upcoming Returns & Quick Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Upcoming Returns -->
+            <div class="lg:col-span-2 glass-panel rounded-xl flex flex-col h-[400px]">
+                <div class="px-6 py-5 border-b border-surface-border flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-text-muted text-[18px]">keyboard_return</span>
+                        <h3 class="text-sm font-semibold text-text-main">Upcoming Returns</h3>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto px-2 pb-2">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border">Asset</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border">Held By</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-text-faint border-b border-surface-border text-right">Expected Return Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            {% for a in upcoming_returns %}
+                            <tr class="border-b border-surface-border/50 hover:bg-surface-highlight/50 transition-colors group cursor-pointer" onclick="window.location='{% url 'asset_detail' a.asset.pk %}'">
+                                <td class="px-4 py-3.5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-surface border border-surface-border flex items-center justify-center">
+                                            <span class="material-symbols-outlined text-text-muted text-[16px]">devices</span>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-text-main">{{ a.asset.name }}</div>
+                                            <div class="text-[11px] font-mono text-primary/80 mt-0.5">{{ a.asset.asset_tag }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <div class="text-text-main">{{ a.employee|default:a.department }}</div>
+                                </td>
+                                <td class="px-4 py-3.5 text-right text-xs text-text-muted group-hover:text-text-main transition-colors">
+                                    {{ a.expected_return_date }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="px-4 py-8 text-center text-text-muted">No upcoming returns.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="glass-panel rounded-xl p-6 flex flex-col h-[400px] relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+                <div class="flex justify-between items-center mb-6 relative z-10">
+                    <h3 class="text-sm font-semibold text-text-main">Quick Actions</h3>
+                </div>
+                <div class="flex flex-col gap-3 relative z-10">
+                    <a href="{% url 'asset_create' %}" class="flex items-center justify-between p-3 rounded-lg border border-surface-border bg-surface-raised hover:bg-surface-highlight transition-all group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary text-[20px]">add_circle</span>
+                            <span class="text-xs font-semibold text-text-main">Register New Asset</span>
+                        </div>
+                        <span class="material-symbols-outlined text-text-faint group-hover:text-text-main text-[16px] transition-colors">chevron_right</span>
+                    </a>
+                    <a href="{% url 'booking_create' %}" class="flex items-center justify-between p-3 rounded-lg border border-surface-border bg-surface-raised hover:bg-surface-highlight transition-all group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-secondary text-[20px]">calendar_today</span>
+                            <span class="text-xs font-semibold text-text-main">Book Shared Resource</span>
+                        </div>
+                        <span class="material-symbols-outlined text-text-faint group-hover:text-text-main text-[16px] transition-colors">chevron_right</span>
+                    </a>
+                    <a href="{% url 'maintenance_create' %}" class="flex items-center justify-between p-3 rounded-lg border border-surface-border bg-surface-raised hover:bg-surface-highlight transition-all group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-warning text-[20px]">build_circle</span>
+                            <span class="text-xs font-semibold text-text-main">Raise Maintenance Ticket</span>
+                        </div>
+                        <span class="material-symbols-outlined text-text-faint group-hover:text-text-main text-[16px] transition-colors">chevron_right</span>
+                    </a>
+                    <a href="{% url 'reports_csv' %}" class="flex items-center justify-between p-3 rounded-lg border border-surface-border bg-surface-raised hover:bg-surface-highlight transition-all group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-text-muted text-[20px]">download</span>
+                            <span class="text-xs font-semibold text-text-main">Export CSV Report</span>
+                        </div>
+                        <span class="material-symbols-outlined text-text-faint group-hover:text-text-main text-[16px] transition-colors">chevron_right</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
-{% endblock %}
+</body>
+</html>
