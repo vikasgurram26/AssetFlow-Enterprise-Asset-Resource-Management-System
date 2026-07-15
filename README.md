@@ -44,13 +44,6 @@ All 10 screens from the official problem statement are implemented, routed throu
 | 9 | Reports & Analytics | Reports | ✅ `reports/` + CSV export |
 | 10 | Activity Logs & Notifications | Activity Log / Notifications | ✅ per-user notification feed + system-wide activity log |
 
-**Roles (`User.Role`):** `EMPLOYEE`, `DEPARTMENT_HEAD`, `ASSET_MANAGER`, `ADMIN`
-
-- **Admin** — organization setup, categories, role promotion (`/promote/`), org-wide visibility (`is_admin()` also honors Django superuser).
-- **Asset Manager** — registers and allocates assets, approves maintenance requests.
-- **Department Head** — can be set as a `Department.head`; approves transfer requests.
-- **Employee** — default role for all public signups; holds allocations, books resources, raises maintenance requests.
-
 ## 🖥 Screenshots
 
 _Add 3–4 screenshots of the dashboard, booking calendar, and maintenance workflow here — dark-theme UI screenshots are one of the fastest ways to stand out in a hackathon README._
