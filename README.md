@@ -16,17 +16,6 @@ Built for **Odoo Hackathon 2026**, problem statement: *AssetFlow — Enterprise 
 
 Organizations that track equipment, furniture, vehicles, and shared spaces on spreadsheets and paper logs lose visibility into who holds what, where it is, and its condition. AssetFlow replaces that manual process with a centralized platform that digitizes the entire asset lifecycle — from registration and department allocation to shared-resource booking, maintenance approvals, and periodic compliance audits — while staying industry-agnostic (offices, schools, hospitals, factories, agencies) and out of purchasing/invoicing/accounting territory.
 
-## 👥 Team
-
-| Member | Role |
-|---|---|
-| Vinay Kumar Chowdary | Backend (Django models, business logic, RBAC, test suite) |
-| Vikas Gurram | _add role_ |
-| _add member_ | _add role_ |
-| _add member_ | _add role_ |
-
-> Fill in the remaining teammates and their roles before final submission.
-
 ## ✨ Key Features
 
 All 10 screens from the official problem statement are implemented, routed through `core/urls.py`:
