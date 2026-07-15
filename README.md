@@ -34,17 +34,18 @@ All 10 screens from the official problem statement are implemented, routed throu
 | 10 | Activity Logs & Notifications | Activity Log / Notifications | ✅ per-user notification feed + system-wide activity log |
 
 ## 🖥 Screenshots
+<img width="1920" height="1080" alt="Login" src="https://github.com/user-attachments/assets/47962408-0f55-4c44-84f1-80757827a93a" />
 
-_Add 3–4 screenshots of the dashboard, booking calendar, and maintenance workflow here — dark-theme UI screenshots are one of the fastest ways to stand out in a hackathon README._
-
-```
-![Dashboard](docs/screenshots/dashboard.png)
-<img width="1917" height="1077" alt="Dashboard" src="https://github.com/user-attachments/assets/a80dd4f1-4817-4f8c-ac84-d83114b326a1" />
-
-
-![Resource Booking](docs/screenshots/booking.png)
-```
 <img width="1917" height="1077" alt="Dashboard" src="https://github.com/user-attachments/assets/33a0ee0b-2167-43f2-b696-307c53f0fd7b" />
+<img width="1912" height="1077" alt="Organization" src="https://github.com/user-attachments/assets/332ffe18-62ca-424b-86c5-e0706803f3ea" />
+<img width="1917" height="1077" alt="Assets" src="https://github.com/user-attachments/assets/0e60b84d-5842-4e80-bf96-e044ed4abe49" />
+<img width="1917" height="1077" alt="Allocation" src="https://github.com/user-attachments/assets/b1d3dc5e-53fa-4b47-a4d7-262539491d33" />
+<img width="1920" height="1080" alt="Resource booking" src="https://github.com/user-attachments/assets/dff2baf0-ba58-4ffd-933c-527671956dc5" />
+<img width="1920" height="1080" alt="Maintenance" src="https://github.com/user-attachments/assets/e859e0af-7852-4b08-8fff-38f8297eb521" />
+<img width="1920" height="1080" alt="Audit" src="https://github.com/user-attachments/assets/a8147ca3-1cde-4faf-a020-6059304892a8" />
+<img width="1920" height="1080" alt="Reports" src="https://github.com/user-attachments/assets/81f86fd1-63c5-45e8-a91a-55355410c88c" />
+<img width="1920" height="1080" alt="Activity log" src="https://github.com/user-attachments/assets/89c34d53-1c28-40ac-ac16-9711984c296f" />
+<img width="1920" height="1080" alt="Notifications" src="https://github.com/user-attachments/assets/f458c002-696c-44e0-b5d3-e2b06042bbfd" />
 
 
 ## 🧱 Recent Enhancements & Modernizations
