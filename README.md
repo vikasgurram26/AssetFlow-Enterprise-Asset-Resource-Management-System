@@ -47,15 +47,15 @@ _Add 3–4 screenshots of the dashboard, booking calendar, and maintenance workf
 Since the initial baseline, the application has been updated with the following enterprise-grade enhancements:
 
 1. **Standardized Premium UI Layout**
-   - Unified sidebar template inclusion at [`sidebar.html`](assetflow/core/templates/core/includes/sidebar.html).
+   - Unified sidebar template inclusion at [`sidebar.html`](core/templates/core/includes/sidebar.html).
    - Removed 1,000+ redundant lines of duplicated navigation HTML across 15+ templates in favor of one source of truth.
-   - Standardized a 260px canvas offset for content blocks in [`base.html`](assetflow/core/templates/core/base.html).
+   - Standardized a 260px canvas offset for content blocks in [`base.html`](core/templates/core/base.html).
 
 2. **Unified Form & Input Styling**
    - Inputs, selects, labels, buttons, and checkboxes are styled globally in `base.html`. All forms — department/category creation, resource booking, role promotion — match the dark theme natively.
 
 3. **Enterprise Test Suite**
-   - 12 unit and integration tests in [`tests.py`](assetflow/core/tests.py) covering RBAC view gates, double-allocation blockers, overlapping booking checks, maintenance lifecycle transitions, and audit-cycle closure/lost-status conversion.
+   - 12 unit and integration tests in [`tests.py`](core/tests.py) covering RBAC view gates, double-allocation blockers, overlapping booking checks, maintenance lifecycle transitions, and audit-cycle closure/lost-status conversion.
 
 4. **Security Hardening**
    - Settings loaded from environment variables via `python-dotenv`.
