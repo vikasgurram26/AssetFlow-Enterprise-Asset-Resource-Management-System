@@ -205,12 +205,6 @@ Implemented in `core/models.py`:
 
 Django resolves `urlpatterns` in list order. The literal maintenance sub-action paths (`/assign/`, `/start/`, `/resolve/`) are declared **before** the `<str:decision>` wildcard used for approve/reject, preventing ambiguous routing.
 
-## 📌 Remaining Before Submission
-
-- [ ] Screenshots and a demo video walkthrough
-- [ ] Fill in the remaining team roster
-- [ ] Verify default branch name if adding absolute GitHub links elsewhere
-
 ---
 
 Built for **Odoo Hackathon 2026**.
