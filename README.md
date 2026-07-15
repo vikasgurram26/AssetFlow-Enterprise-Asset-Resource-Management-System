@@ -38,11 +38,14 @@ All 10 screens from the official problem statement are implemented, routed throu
 _Add 3–4 screenshots of the dashboard, booking calendar, and maintenance workflow here — dark-theme UI screenshots are one of the fastest ways to stand out in a hackathon README._
 
 ```
-![Dashboard](docs/screenshots/dashboard.png)<img width="1920" height="1080" alt="Login" src="https://github.com/user-attachments/assets/bd1d36c2-e536-4fc7-befd-3a34cf92f262" />
+![Dashboard](docs/screenshots/dashboard.png)
+<img width="1917" height="1077" alt="Dashboard" src="https://github.com/user-attachments/assets/a80dd4f1-4817-4f8c-ac84-d83114b326a1" />
 
 
 ![Resource Booking](docs/screenshots/booking.png)
 ```
+<img width="1917" height="1077" alt="Dashboard" src="https://github.com/user-attachments/assets/33a0ee0b-2167-43f2-b696-307c53f0fd7b" />
+
 
 ## 🧱 Recent Enhancements & Modernizations
 
