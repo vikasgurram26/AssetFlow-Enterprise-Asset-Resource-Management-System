@@ -38,7 +38,8 @@ All 10 screens from the official problem statement are implemented, routed throu
 _Add 3–4 screenshots of the dashboard, booking calendar, and maintenance workflow here — dark-theme UI screenshots are one of the fastest ways to stand out in a hackathon README._
 
 ```
-![Dashboard](docs/screenshots/dashboard.png)
+![Dashboard](docs/screenshots/dashboard.png)![Uploading Login.png…]()
+
 ![Resource Booking](docs/screenshots/booking.png)
 ```
 
